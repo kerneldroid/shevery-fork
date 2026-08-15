@@ -1,3 +1,5 @@
+# I'm currently working on my own personal projects, so this repo will rarely be updated. 
+
 # Shevery
 
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
