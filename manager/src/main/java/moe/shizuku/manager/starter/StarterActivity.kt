@@ -380,10 +380,45 @@ private class ViewModel(context: Context, root: Boolean, dhizuku: Boolean, host:
                         appendLine("✓ Shevery binder verified.")
                         postResult()
                     } else {
-                        appendLine("✗ Starter command completed, but Shevery service did not become available.")
-                        appendLine("  Direct Dhizuku startup can fail when the Device Owner context cannot provide the same shell/root environment as ADB or root.")
-                        appendLine("  Try starting with Wireless ADB or root, then copy diagnostics if this repeats.")
-                        postResult(DhizukuException("Dhizuku starter did not publish a Shevery binder"))
+                        appendLine("Direct Dhizuku execution did not publish binder, attempting ADB TCP 5555 activation via Dhizuku...")
+                        var adbSuccess = false
+                        try {
+                            dhizukuService.enableAdb()
+                            val bound = dhizukuService.bindAdbTcp(AdbStarter.TCP_MODE_PORT)
+                            if (bound) {
+                                appendLine("✓ Port 5555 bound via Dhizuku. Connecting via ADB...")
+                                AdbStarter.start(
+                                    host = "127.0.0.1",
+                                    port = AdbStarter.TCP_MODE_PORT,
+                                    context = appContext,
+                                    listener = {
+                                        synchronized(outputLock) {
+                                            sb.append(String(it))
+                                        }
+                                        postResult()
+                                    },
+                                    log = {
+                                        appendLine(it)
+                                    }
+                                )
+                                if (waitForShizukuBinder()) {
+                                    appendLine("✓ Shevery binder verified via ADB 5555.")
+                                    adbSuccess = true
+                                    postResult()
+                                }
+                            } else {
+                                appendLine("✗ Failed to bind ADB to port 5555 via Dhizuku.")
+                            }
+                        } catch (adbEx: Exception) {
+                            appendLine("✗ ADB TCP activation via Dhizuku failed: ${adbEx.message}")
+                        }
+
+                        if (!adbSuccess) {
+                            appendLine("✗ Starter command completed, but Shevery service did not become available.")
+                            appendLine("  Direct Dhizuku startup can fail when the Device Owner context cannot provide the same shell/root environment as ADB or root.")
+                            appendLine("  Try starting with Wireless ADB or root, then copy diagnostics if this repeats.")
+                            postResult(DhizukuException("Dhizuku starter did not publish a Shevery binder"))
+                        }
                     }
                 } finally {
                     connection?.let { conn ->

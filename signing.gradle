@@ -15,3 +15,7 @@ if (ksFile.canRead()) {
     android.signingConfigs.sign.keyAlias = android.signingConfigs.debug.keyAlias
     android.signingConfigs.sign.keyPassword = android.signingConfigs.debug.keyPassword
 }
+
+android.signingConfigs.sign.enableV1Signing = true
+android.signingConfigs.sign.enableV2Signing = true
+android.signingConfigs.sign.enableV3Signing = true

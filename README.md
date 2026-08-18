@@ -2,12 +2,19 @@
 
 # Shevery
 
+<div align="center">
+
+[![Stars](https://img.shields.io/github/stars/HmnDev-Tech/shevery?style=for-the-badge&color=yellow)](https://github.com/HmnDev-Tech/shevery/stargazers) [![Forks](https://img.shields.io/github/forks/HmnDev-Tech/shevery?style=for-the-badge&color=orange)](https://github.com/HmnDev-Tech/shevery/network/members) [![Downloads](https://img.shields.io/github/downloads/HmnDev-Tech/shevery/total?style=for-the-badge&color=green)](https://github.com/HmnDev-Tech/shevery/releases) [![Telegram](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/hmndevtech)
+
+</div>
+
+
 [English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 ## Fork status
 
 > [!IMPORTANT]
-> **Migration Action Required:** Due to the App Signation (moe.shizuku.privileged.api -> **com.hamondev.shevery**), you **MUST UNINSTALL** any older official Shizuku Manager app from your device before installing Shevery. Otherwise, they will conflict.
+> **Migration Action Required:** Due to the App Signation (`moe.shizuku.privileged.api` -> `com.hamondev.shevery`), you **MUST UNINSTALL** any older official Shizuku Manager app from your device before installing Shevery. Otherwise, they will conflict.
 Upstream project reference: <https://github.com/RikkaApps/Shizuku>
 > 
 
@@ -51,7 +58,7 @@ Shizuku uses a completely different way. See detailed description below.
 ## Screenshots
 
 <details>
-  <summary>📸 Click to open Screenshot Gallery</summary>
+  <summary> Click to open Screenshots</summary>
   <br/>
   <table>
     <tr>
@@ -122,25 +129,24 @@ https://github.com/RikkaApps/Shizuku-API#migration-guide-for-existing-applicatio
 
 The `:manager:assembleDebug` task generates a debuggable server. You can attach a debugger to `shizuku_server` to debug the server. Be aware that, in Android Studio, "Run/Debug configurations" - "Always install with package manager" should be checked, so that the server will use the latest code.
 
+## How "Start(via Dhizuku)" works?
+
+* First, you need to start Shevery by PC/OTG or Wireless Debugging.
+* Next, start Dhizuku.
+  - Do not start Shevery via Dhizuku first.
+  
 ## License
 
 All code files in this project are licensed under Apache 2.0
 
-Under Apache 2.0 section 6, specifically:
-
-* You are **FORBIDDEN** to use `manager/src/main/res/mipmap*/ic_launcher*.png` image files, unless for displaying Shizuku itself.
-
-* You are **FORBIDDEN** to use `Shevery` as app name or use `moe.shizuku.privileged.api` and `com.hamondev.shevery` as application id or declare `moe.shizuku.manager.permission.*` permission.
-
 ## Credits
 
-* [Nightzuku](https://github.com/kerneldroid/Nightzuku) - for parts of App UI, Catalog Modules System and Android 17 support.
-* [Shizuku](https://github.com/rikkaapps/Shizuku) - for Shizuku API and main sources.
+* [kerneldroid](https://github.com/kerneldroid) - for parts of App UI, Catalog Modules System and Android 17 support.
+* [RikkaApps/Shizuku](https://github.com/rikkaapps/Shizuku) - for Shizuku API and main sources.
 * [Landon Moran](https://github.com/LandonMoran) - for Dhizuku, TCP and etc. fixes.
+* [DP-Hridayan](https://github.com/DP-Hridayan/aShellYou) - for parts of "Comput" UI.
+* [protonpony/Shizuku-Keeper](https://github.com/protonpony/Shizuku-Keeper) - for parts of "Autostart on boot via Wireless Debugging".
 
-### WARNING!
-
-Shevery update is in 19.08.26
 
 ## And...
 
@@ -150,3 +156,6 @@ Follow this steps:
 - Create GH Repository for this module.
 - Add topic "shevery-modules"
 - Add sources and Release with module.
+
+## Attention!
+- Shevery r32 gonna be 22.08.26

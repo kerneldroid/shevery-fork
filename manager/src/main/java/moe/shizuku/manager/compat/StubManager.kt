@@ -75,7 +75,9 @@ object StubManager {
                 if (result.ok && pollInstalled(context, wantInstalled = true)) {
                     return@withContext Result(true, result.channel)
                 }
-                lastFailure = result
+                if (!result.ok) {
+                    lastFailure = result
+                }
             }
             lastFailure ?: Result(false, "none", "no channel available")
         }

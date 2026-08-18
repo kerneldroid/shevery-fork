@@ -46,6 +46,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
@@ -57,9 +61,8 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -73,9 +76,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,6 +127,7 @@ private val MODULE_MIME_TYPES = arrayOf(
 @Composable
 fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
     val context = LocalContext.current
+    val view = LocalView.current
     val scope = rememberCoroutineScope()
     var selectedTab by remember { mutableStateOf(0) } // 0: Installed, 1: Catalog
     var showCatalog by remember { mutableStateOf(false) }
@@ -252,26 +259,17 @@ fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
             title = stringResource(R.string.modules_title),
             onNavigateUp = null,
             bottomInset = 112.dp,
+            isRefreshing = checkingUpdates,
+            onRefresh = if (selectedTab == 0) ({
+                view.performHapticFeedback(android.view.HapticFeedbackConstants.CONFIRM)
+                checkAllUpdates()
+            }) else null,
             actions = {
-            if (selectedTab == 0) {
-                OutlinedButton(
-                    modifier = Modifier.height(36.dp),
-                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 4.dp),
-                    onClick = { checkAllUpdates() },
-                    enabled = !checkingUpdates
-                ) {
-                    if (checkingUpdates) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
-                    } else {
-                        ShizukuIcon(
-                            R.drawable.ic_outline_file_download_24,
-                            modifier = Modifier
-                                .padding(end = 4.dp)
-                                .size(16.dp)
-                        )
-                        Text(stringResource(R.string.modules_check_updates))
-                    }
-                }
+                ModuleTabsSwitcher(
+                    selectedTab = selectedTab,
+                    onInstalled = { selectedTab = 0 },
+                    onCatalog = { showCatalog = true }
+                )
                 Spacer(modifier = Modifier.size(8.dp))
                 FilledTonalButton(
                     modifier = Modifier.height(36.dp),
@@ -288,33 +286,8 @@ fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
                     )
                     Text(stringResource(R.string.modules_install_zip))
                 }
-            }
         }
     ) {
-        item {
-            TabRow(
-                selectedTabIndex = selectedTab,
-                containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 12.dp)
-            ) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text(stringResource(R.string.modules_tab_installed)) }
-                )
-                Tab(
-                    selected = false,
-                    onClick = {
-                        showCatalog = true
-                    },
-                    text = { Text(stringResource(R.string.modules_tab_catalog)) }
-                )
-            }
-        }
-
         if (selectedTab == 0) {
             item {
                 AnimatedContent(targetState = modules.isEmpty(), label = "module-empty-state") { empty ->
@@ -858,6 +831,66 @@ private fun ModuleButton(
                     .size(18.dp)
             )
             Text(stringResource(label))
+        }
+    }
+}
+
+@Composable
+private fun ModuleTabsSwitcher(
+    selectedTab: Int,
+    onInstalled: () -> Unit,
+    onCatalog: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.height(36.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            ModuleTabSegment(
+                selected = selectedTab == 0,
+                icon = Icons.Rounded.CheckCircle,
+                contentDescription = stringResource(R.string.modules_tab_installed),
+                onClick = onInstalled
+            )
+            ModuleTabSegment(
+                selected = false,
+                icon = Icons.Rounded.Apps,
+                contentDescription = stringResource(R.string.modules_tab_catalog),
+                onClick = onCatalog
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModuleTabSegment(
+    selected: Boolean,
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = if (selected) MaterialTheme.colorScheme.secondaryContainer else Color.Transparent,
+        contentColor = if (selected) {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        },
+        modifier = Modifier.height(36.dp),
+        onClick = onClick
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier.padding(horizontal = 14.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

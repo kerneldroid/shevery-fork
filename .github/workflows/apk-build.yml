@@ -2,15 +2,15 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev", "nightly" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "nightly" ]
   workflow_dispatch:
     inputs:
       build_type:
         description: 'Build variant'
         required: false
-        default: 'debug'
+        default: 'release'
         type: choice
         options:
           - debug

@@ -3,6 +3,7 @@ package moe.shizuku.manager.module.catalog
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -63,6 +64,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -110,15 +112,22 @@ private const val MAX_README_CHARS = 16000
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun CatalogScreen(onNavigateUp: () -> Unit) {
+    BackHandler { onNavigateUp() }
     val navBarState = LocalFloatingNavBarVisible.current
-    DisposableEffect(onNavigateUp) {
+    val scope = rememberCoroutineScope()
+    DisposableEffect(Unit) {
         navBarState.value = false
+        val watcher = scope.launch {
+            snapshotFlow { navBarState.value }.collect { visible ->
+                if (visible) navBarState.value = false
+            }
+        }
         onDispose {
+            watcher.cancel()
             navBarState.value = true
         }
     }
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val discoveryManager = remember { ModuleDiscoveryManager.getInstance(context) }
     val installer = remember { ModuleInstaller.getInstance() }
 
@@ -423,13 +432,7 @@ private fun ModuleDetailScreen(
     onViewOnGitHub: () -> Unit,
     onRefreshInstalled: () -> Unit
 ) {
-    val navBarState = LocalFloatingNavBarVisible.current
-    DisposableEffect(Unit) {
-        navBarState.value = false
-        onDispose {
-            navBarState.value = true
-        }
-    }
+    BackHandler { onBack() }
     val scope = rememberCoroutineScope()
     var readmeContent by remember { mutableStateOf<String?>(null) }
     var isLoadingReadme by remember { mutableStateOf(true) }

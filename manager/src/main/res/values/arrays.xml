@@ -10,7 +10,7 @@
     <integer-array name="night_mode_value">
         <item>1</item>
         <item>2</item>
-        <item>-1</item>
+        <item>3</item>
     </integer-array>
 
 </resources>

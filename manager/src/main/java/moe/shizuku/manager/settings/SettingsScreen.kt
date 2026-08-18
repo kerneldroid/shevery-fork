@@ -2,23 +2,38 @@
 
 package moe.shizuku.manager.settings
 
+import android.Manifest
 import android.app.Activity
 import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.text.TextUtils
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -32,6 +47,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -59,12 +75,14 @@ import moe.shizuku.manager.ui.compose.SwitchSettingsRow
 import moe.shizuku.manager.ui.compose.htmlToPlainText
 import moe.shizuku.manager.utils.CustomTabsHelper
 import rikka.core.util.ResourceUtils
+import rikka.core.util.ClipboardUtils
 import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
 import rikka.shizuku.manager.ShizukuLocales
 import java.util.Locale
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.rememberCoroutineScope
@@ -85,7 +103,13 @@ fun SettingsScreen() {
     val prefs = ShizukuSettings.getPreferences()
 
     var startOnBoot by remember {
-        mutableStateOf(packageManager.isComponentEnabled(componentName))
+        mutableStateOf(
+            ShizukuSettings.getStartOnBoot()
+                || (packageManager.isComponentEnabled(componentName) && !ShizukuSettings.getStartOnBootAdb())
+        )
+    }
+    var adbStartOnBoot by remember {
+        mutableStateOf(ShizukuSettings.getStartOnBootAdb())
     }
     var errorProtect by remember {
         mutableStateOf(ModuleSettings.isErrorProtectEnabled())
@@ -143,6 +167,7 @@ fun SettingsScreen() {
     }
     var showApiKeyDialog by remember { mutableStateOf(false) }
     var showGeminiModelDialog by remember { mutableStateOf(false) }
+    var showMissingPermissionDialog by remember { mutableStateOf(false) }
     var recreateTick by remember { mutableIntStateOf(0) }
     var showUpdateSettings by remember { mutableStateOf(false) }
 
@@ -207,7 +232,9 @@ fun SettingsScreen() {
                 }
             }.onSuccess {
                 Toast.makeText(context, "Restore completed successfully", Toast.LENGTH_SHORT).show()
-                startOnBoot = packageManager.isComponentEnabled(componentName)
+                startOnBoot = ShizukuSettings.getStartOnBoot()
+                    || (packageManager.isComponentEnabled(componentName) && !ShizukuSettings.getStartOnBootAdb())
+                adbStartOnBoot = ShizukuSettings.getStartOnBootAdb()
                 errorProtect = ModuleSettings.isErrorProtectEnabled()
                 languageTag = prefs.getString(LANGUAGE, "SYSTEM") ?: "SYSTEM"
                 nightMode = ShizukuSettings.getNightMode()
@@ -231,12 +258,21 @@ fun SettingsScreen() {
     val localeOptions = remember(languageTag) {
         buildLocaleOptions(context, languageTag)
     }
-    val languageSummary = localeOptions.firstOrNull { it.tag == languageTag }?.summary
+    val languageSummary = localeOptions.firstOrNull { it.tag == languageTag }
+        ?.let { it.summary ?: it.title }
         ?: stringResource(rikka.core.R.string.follow_system)
     val nightValues = context.resources.getIntArray(R.array.night_mode_value).toList()
     val nightLabels = stringArrayResource(R.array.night_mode).toList()
-    val nightSummary = nightLabels.getOrElse(nightValues.indexOf(nightMode)) {
-        stringResource(rikka.core.R.string.follow_system)
+    val nightSummary = when (nightMode) {
+        AppCompatDelegate.MODE_NIGHT_NO -> nightLabels.getOrElse(0) {
+            stringResource(rikka.core.R.string.follow_system)
+        }
+        AppCompatDelegate.MODE_NIGHT_YES -> nightLabels.getOrElse(1) {
+            stringResource(rikka.core.R.string.follow_system)
+        }
+        else -> nightLabels.getOrElse(2) {
+            stringResource(rikka.core.R.string.follow_system)
+        }
     }
     val contributors = htmlToPlainText(context.getString(R.string.translation_contributors))
 
@@ -247,11 +283,33 @@ fun SettingsScreen() {
         }
     }
 
-    if (showUpdateSettings) {
-        moe.shizuku.manager.module.update.UpdateSettingsScreen(
-            onNavigateUp = { showUpdateSettings = false }
-        )
-    } else {
+    AnimatedContent(
+        targetState = showUpdateSettings,
+        transitionSpec = {
+            if (targetState) {
+                (slideInHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth } +
+                    fadeIn(animationSpec = tween(300)))
+                    .togetherWith(
+                        slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> -fullWidth / 4 } +
+                            fadeOut(animationSpec = tween(300))
+                    )
+            } else {
+                (slideInHorizontally(animationSpec = tween(300)) { fullWidth -> -fullWidth / 4 } +
+                    fadeIn(animationSpec = tween(300)))
+                    .togetherWith(
+                        slideOutHorizontally(animationSpec = tween(300)) { fullWidth -> fullWidth } +
+                            fadeOut(animationSpec = tween(300))
+                    )
+            }
+        },
+        label = "update-settings"
+    ) { showUpdateSettingsScreen ->
+        if (showUpdateSettingsScreen) {
+            BackHandler { showUpdateSettings = false }
+            moe.shizuku.manager.module.update.UpdateSettingsScreen(
+                onNavigateUp = { showUpdateSettings = false }
+            )
+        } else {
         ShizukuLazyScaffold(
             title = stringResource(R.string.settings_title),
             onNavigateUp = null,
@@ -266,10 +324,55 @@ fun SettingsScreen() {
                     summary = stringResource(R.string.settings_start_on_boot_summary),
                     checked = startOnBoot,
                     onCheckedChange = { enabled ->
-                        packageManager.setComponentEnabled(componentName, enabled)
-                        startOnBoot = packageManager.isComponentEnabled(componentName)
+                        ShizukuSettings.setStartOnBoot(enabled)
+                        startOnBoot = ShizukuSettings.getStartOnBoot()
+                        packageManager.setComponentEnabled(
+                            componentName,
+                            ShizukuSettings.getStartOnBoot() || ShizukuSettings.getStartOnBootAdb()
+                        )
                     }
                 )
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    SwitchSettingsRow(
+                        icon = R.drawable.ic_wadb_24,
+                        title = stringResource(R.string.settings_start_on_boot_adb),
+                        summary = stringResource(
+                            if (tcpMode) R.string.settings_start_on_boot_adb_summary
+                            else R.string.settings_start_on_boot_adb_summary_no_tcp
+                        ),
+                        checked = adbStartOnBoot,
+                        onCheckedChange = { enabled ->
+                            if (enabled) {
+                                val hasPermission = context.checkSelfPermission(Manifest.permission.WRITE_SECURE_SETTINGS) ==
+                                        PackageManager.PERMISSION_GRANTED
+                                if (hasPermission) {
+                                    ShizukuSettings.setStartOnBootAdb(true)
+                                    adbStartOnBoot = true
+                                    packageManager.setComponentEnabled(
+                                        componentName,
+                                        ShizukuSettings.getStartOnBoot() || ShizukuSettings.getStartOnBootAdb()
+                                    )
+                                    if (!tcpMode) {
+                                        Toast.makeText(
+                                            context,
+                                            R.string.settings_start_on_boot_adb_warning_no_tcp,
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                    }
+                                } else {
+                                    showMissingPermissionDialog = true
+                                }
+                            } else {
+                                ShizukuSettings.setStartOnBootAdb(false)
+                                adbStartOnBoot = false
+                                packageManager.setComponentEnabled(
+                                    componentName,
+                                    ShizukuSettings.getStartOnBoot() || ShizukuSettings.getStartOnBootAdb()
+                                )
+                            }
+                        }
+                    )
+                }
                 GroupDivider()
                 SectionHeader(stringResource(R.string.settings_service_group))
                 SwitchSettingsRow(
@@ -503,7 +606,7 @@ fun SettingsScreen() {
         }
 
         item {
-            SettingsGroup(title = stringResource(R.string.backup_restore_title)) {
+            SettingsGroup(title = stringResource(R.string.settings_sections_title)) {
                 SectionHeader(stringResource(R.string.lab_features_title))
                 SettingsRow(
                     icon = R.drawable.ic_settings_outline_24dp,
@@ -512,6 +615,7 @@ fun SettingsScreen() {
                     onClick = { context.startActivity(Intent(context, LabFeaturesActivity::class.java)) }
                 )
                 GroupDivider()
+                SectionHeader(stringResource(R.string.backup_section_title))
                 SettingsRow(
                     icon = R.drawable.ic_outline_arrow_upward_24,
                     title = stringResource(R.string.backup_title),
@@ -531,6 +635,7 @@ fun SettingsScreen() {
                 )
             }
         }
+    }
     }
 }
 
@@ -574,7 +679,11 @@ fun SettingsScreen() {
                     }
                 )
             },
-            selectedIndex = nightValues.indexOf(nightMode),
+            selectedIndex = when (nightMode) {
+                AppCompatDelegate.MODE_NIGHT_NO -> 0
+                AppCompatDelegate.MODE_NIGHT_YES -> 1
+                else -> 2
+            },
             onDismiss = { showNightDialog = false },
             onSelect = { index ->
                 val value = nightValues[index]
@@ -668,7 +777,7 @@ fun SettingsScreen() {
                     value = tempKey,
                     onValueChange = { tempKey = it },
                     label = { Text(stringResource(R.string.comput_api_key_label)) },
-                    placeholder = { Text("AIzaSy...") },
+                    placeholder = { Text("AQ.Ab8...") },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -723,6 +832,72 @@ fun SettingsScreen() {
                 computGeminiModel = selected
                 showGeminiModelDialog = false
             }
+        )
+    }
+
+    if (showMissingPermissionDialog) {
+        val serviceRunning = Shizuku.pingBinder()
+        val grantCommand = "adb shell pm grant ${context.packageName} android.permission.WRITE_SECURE_SETTINGS"
+        AlertDialog(
+            onDismissRequest = { showMissingPermissionDialog = false },
+            title = { Text(stringResource(R.string.settings_start_on_boot_adb_missing_permission_title)) },
+            text = {
+                Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                    if (!serviceRunning) {
+                        Text(stringResource(R.string.settings_start_on_boot_adb_not_running))
+                    } else {
+                        Text(stringResource(R.string.settings_start_on_boot_adb_grant_failed))
+                        Spacer(Modifier.height(12.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.surfaceVariant,
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text(
+                                text = grantCommand,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(12.dp)
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = stringResource(R.string.settings_start_on_boot_adb_missing_permission_instruction),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (!tcpMode) {
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                text = stringResource(R.string.settings_start_on_boot_adb_warning_no_tcp),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                if (serviceRunning) {
+                    TextButton(
+                        onClick = {
+                            ClipboardUtils.put(context, grantCommand)
+                            showMissingPermissionDialog = false
+                        }
+                    ) {
+                        Text(stringResource(R.string.settings_start_on_boot_adb_missing_permission_copy))
+                    }
+                } else {
+                    TextButton(
+                        onClick = { showMissingPermissionDialog = false }
+                    ) {
+                        Text(stringResource(android.R.string.ok))
+                    }
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = MaterialTheme.shapes.extraLarge
         )
     }
 }

@@ -27,6 +27,7 @@ public class ShizukuSettings {
     public static final String KEEP_START_ON_BOOT = "start_on_boot";
     public static final String TCP_MODE = "tcp_mode";
     public static final String AUTO_DISABLE_USB_DEBUGGING = "auto_disable_usb_debugging";
+    public static final String START_ON_BOOT_ADB = "start_on_boot_adb";
 
 
     private static SharedPreferences sPreferences;
@@ -125,5 +126,20 @@ public class ShizukuSettings {
         getPreferences().edit().putBoolean(AUTO_DISABLE_USB_DEBUGGING, enabled).apply();
     }
 
+    public static boolean getStartOnBootAdb() {
+        return getPreferences().getBoolean(START_ON_BOOT_ADB, false);
+    }
+
+    public static void setStartOnBootAdb(boolean enabled) {
+        getPreferences().edit().putBoolean(START_ON_BOOT_ADB, enabled).apply();
+    }
+
+    public static boolean getStartOnBoot() {
+        return getPreferences().getBoolean(KEEP_START_ON_BOOT, false);
+    }
+
+    public static void setStartOnBoot(boolean enabled) {
+        getPreferences().edit().putBoolean(KEEP_START_ON_BOOT, enabled).apply();
+    }
 
 }

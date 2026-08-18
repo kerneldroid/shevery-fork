@@ -1,4 +1,5 @@
 @file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
     androidx.compose.foundation.layout.ExperimentalLayoutApi::class,
     androidx.compose.material3.ExperimentalMaterial3Api::class,
     androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
@@ -10,62 +11,97 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.widget.Toast
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.Send
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.ContentPaste
 import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.History
+import androidx.compose.material.icons.rounded.KeyboardDoubleArrowDown
 import androidx.compose.material.icons.rounded.PlaylistPlay
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.Stop
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -75,6 +111,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -83,7 +120,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -92,7 +130,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.shizuku.manager.R
 import moe.shizuku.manager.module.ModuleSettings
-import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
+import moe.shizuku.manager.ui.compose.ShizukuScaffold
 import moe.shizuku.manager.utils.AiExplainUtil
 import moe.shizuku.server.IShizukuService
 import org.json.JSONArray
@@ -100,11 +138,24 @@ import org.json.JSONObject
 import rikka.shizuku.Shizuku
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.atomic.AtomicBoolean
 
 private data class PresetCommand(
     val title: String,
     val command: String,
     val category: String
+)
+
+private enum class ComputLineKind { COMMAND, ERROR, WARNING, NORMAL }
+
+private data class ComputLogLine(
+    val text: String,
+    val kind: ComputLineKind
+)
+
+private val ComputSpring = spring<Float>(
+    dampingRatio = 0.35f,
+    stiffness = Spring.StiffnessLow
 )
 
 @Composable
@@ -121,6 +172,13 @@ fun ComputScreen() {
     var showGeminiSection by remember { mutableStateOf(false) }
     var showReCommandPrompt by remember { mutableStateOf(false) }
     var lastFailed by remember { mutableStateOf(false) }
+    var lastRunCommand by remember { mutableStateOf("") }
+    val cancelRequested = remember { AtomicBoolean(false) }
+
+    var searchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var historyExpanded by remember { mutableStateOf(false) }
+    var cmdHistory by remember { mutableStateOf(listOf<String>()) }
 
     var showCommandiumSheet by remember { mutableStateOf(false) }
     var showMacrosSheet by remember { mutableStateOf(false) }
@@ -178,23 +236,13 @@ fun ComputScreen() {
         ModuleSettings.setComputMacros(json.toString())
     }
 
-    val errorColor = MaterialTheme.colorScheme.error
-    val warningColor = MaterialTheme.colorScheme.tertiary
-    val normalColor = MaterialTheme.colorScheme.onSurface
-
-    val annotatedOutput = remember(outputLog, errorColor, warningColor, normalColor) {
-        buildAnnotatedLog(outputLog, errorColor, warningColor, normalColor)
-    }
-
-    val statusText = when {
-        isRunning -> stringResource(R.string.comput_status_running)
-        lastFailed -> stringResource(R.string.comput_status_error)
-        else -> stringResource(R.string.comput_status_ready)
-    }
-    val statusColor = when {
-        isRunning -> MaterialTheme.colorScheme.tertiary
-        lastFailed -> MaterialTheme.colorScheme.error
-        else -> MaterialTheme.colorScheme.primary
+    fun clearConsole() {
+        command = ""
+        outputLog = context.getString(R.string.comput_console_cleared)
+        aiExplanation = ""
+        showGeminiSection = false
+        lastRunCommand = ""
+        lastFailed = false
     }
 
     suspend fun executeCommandInternal(cmd: String): Pair<String, Boolean> {
@@ -284,7 +332,8 @@ fun ComputScreen() {
                     null,
                     null
                 )
-                
+
+                val destroy: () -> Unit = { runCatching { remote.destroy() } }
                 val stdoutPfd = remote.getInputStream()
                 val stderrPfd = remote.getErrorStream()
 
@@ -292,18 +341,29 @@ fun ComputScreen() {
                 var stderrText = ""
                 val stdoutThread = Thread {
                     try {
-                        stdoutText = readStreamTail(stdoutPfd)
+                        stdoutText = readStreamTail(stdoutPfd, cancelRequested, destroy)
                     } catch (ignore: Exception) { }
                 }
                 val stderrThread = Thread {
                     try {
-                        stderrText = readStreamTail(stderrPfd)
+                        stderrText = readStreamTail(stderrPfd, cancelRequested, destroy)
                     } catch (ignore: Exception) { }
                 }
                 stdoutThread.start()
                 stderrThread.start()
-                
-                val finished = remote.waitForTimeout(120L, java.util.concurrent.TimeUnit.SECONDS.name)
+
+                val finished = run {
+                    var done = false
+                    val startedAt = SystemClock.elapsedRealtime()
+                    while (!cancelRequested.get()) {
+                        if (SystemClock.elapsedRealtime() - startedAt >= 120_000L) break
+                        if (remote.waitForTimeout(1L, java.util.concurrent.TimeUnit.SECONDS.name)) {
+                            done = true
+                            break
+                        }
+                    }
+                    done
+                }
                 val exitCode = if (finished) {
                     remote.exitValue()
                 } else {
@@ -314,7 +374,8 @@ fun ComputScreen() {
                 }
                 stdoutThread.join(1000)
                 stderrThread.join(1000)
-                
+
+                val cancelled = cancelRequested.get()
                 val resString = buildString {
                     if (stdoutText.isNotBlank()) append(stdoutText.trim())
                     if (stderrText.isNotBlank()) {
@@ -322,7 +383,11 @@ fun ComputScreen() {
                         append("[E] ")
                         append(stderrText.trim())
                     }
-                    if (!finished) {
+                    if (cancelled) {
+                        if (isNotEmpty()) append("\n")
+                        append("[E] ")
+                        append(context.getString(R.string.comput_cancelled))
+                    } else if (!finished) {
                         if (isNotEmpty()) append("\n")
                         append(context.getString(R.string.comput_timed_out))
                     } else if (exitCode != 0) {
@@ -331,7 +396,7 @@ fun ComputScreen() {
                     }
                     if (isEmpty()) append(context.getString(R.string.comput_command_no_output))
                 }
-                val hasFailed = !finished || exitCode != 0 || stderrText.isNotBlank()
+                val hasFailed = !cancelled && ((!finished || exitCode != 0) || stderrText.isNotBlank())
                 Pair(resString, hasFailed)
             } catch (e: Exception) {
                 Pair("[E] Shell execution failed: ${e.message}", true)
@@ -343,10 +408,13 @@ fun ComputScreen() {
     fun runShellCommand(cmd: String) {
         if (cmd.isBlank()) return
         scope.launch {
+            cancelRequested.set(false)
+            historyExpanded = false
             isRunning = true
             lastFailed = false
             aiExplanation = ""
-            
+            lastRunCommand = cmd
+
             if (isRecording) {
                 recordedCommands.add(cmd)
             }
@@ -358,11 +426,16 @@ fun ComputScreen() {
             }
 
             val (result, hasFailed) = executeCommandInternal(cmd)
+            val cancelled = cancelRequested.get()
             outputLog = result
             isRunning = false
             lastFailed = hasFailed
 
-            if (hasFailed && ModuleSettings.isComputAiExplainEnabled()) {
+            if (!cancelled && cmd.isNotBlank()) {
+                cmdHistory = (listOf(cmd) + cmdHistory.filter { it != cmd }).take(50)
+            }
+
+            if (hasFailed && !cancelled && ModuleSettings.isComputAiExplainEnabled()) {
                 val apiKey = ModuleSettings.getComputApiKey()
                 if (apiKey.isNotBlank()) {
                     scope.launch {
@@ -383,6 +456,8 @@ fun ComputScreen() {
 
     fun runMacro(macroName: String, commands: List<String>) {
         scope.launch {
+            cancelRequested.set(false)
+            historyExpanded = false
             isRunning = true
             lastFailed = false
             aiExplanation = ""
@@ -391,9 +466,10 @@ fun ComputScreen() {
             outputLog = fullLog.toString()
 
             for (cmd in commands) {
+                if (cancelRequested.get()) break
                 fullLog.append(context.getString(R.string.comput_executing_cmd, cmd)).append("\n")
                 outputLog = fullLog.toString()
-                
+
                 val (result, hasFailed) = executeCommandInternal(cmd)
                 fullLog.append(result).append("\n\n")
                 outputLog = fullLog.toString()
@@ -417,6 +493,7 @@ fun ComputScreen() {
                 }
             }
             isRunning = false
+            cancelRequested.set(false)
         }
     }
 
@@ -437,6 +514,12 @@ fun ComputScreen() {
                 emptyApiKeyMessage = context.getString(R.string.comput_ai_api_key_empty))
             isExplaining = false
         }
+    }
+
+    fun copyToClipboard(label: String, text: String, toast: String) {
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText(label, text))
+        Toast.makeText(context, toast, Toast.LENGTH_SHORT).show()
     }
 
     val quickActionChips = remember {
@@ -475,159 +558,164 @@ fun ComputScreen() {
         )
     }
 
-    ShizukuLazyScaffold(
-        title = stringResource(R.string.comput_title),
-        onNavigateUp = null,
-        bottomInset = 112.dp
-    ) {
-        // Mode & Tools Header Card
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    SingleChoiceSegmentedButtonRow(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        SegmentedButton(
-                            selected = !isAdbMode,
-                            onClick = { isAdbMode = false },
-                            shape = CircleShape,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                stringResource(R.string.comput_sh_mode),
-                                style = MaterialTheme.typography.labelMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                        SegmentedButton(
-                            selected = isAdbMode,
-                            onClick = { isAdbMode = true },
-                            shape = CircleShape,
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text(
-                                stringResource(R.string.comput_adb_mode),
-                                style = MaterialTheme.typography.labelMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        }
-                    }
-
-                    // Horizontally Scrollable Action Tools Chips Row
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .horizontalScroll(rememberScrollState()),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        FilterChip(
-                            selected = false,
-                            onClick = { showCommandiumSheet = true },
-                            label = {
-                                Text(
-                                    stringResource(R.string.comput_tab_commandium),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 1
-                                )
-                            },
-                            leadingIcon = { Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            shape = CircleShape,
-                            colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-                        )
-                        FilterChip(
-                            selected = false,
-                            onClick = { showMacrosSheet = true },
-                            label = {
-                                Text(
-                                    stringResource(R.string.comput_tab_macros),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 1
-                                )
-                            },
-                            leadingIcon = { Icon(Icons.Rounded.PlaylistPlay, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            shape = CircleShape,
-                            colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-                        )
-                        FilterChip(
-                            selected = false,
-                            onClick = { showPresetsSheet = true },
-                            label = {
-                                Text(
-                                    stringResource(R.string.comput_tab_presets),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    maxLines = 1
-                                )
-                            },
-                            leadingIcon = { Icon(Icons.Rounded.Apps, contentDescription = null, modifier = Modifier.size(16.dp)) },
-                            shape = CircleShape,
-                            colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh)
-                        )
-                    }
-                }
-            }
+    val outputLines = remember(outputLog, lastRunCommand) {
+        val lines = mutableListOf<ComputLogLine>()
+        if (lastRunCommand.isNotBlank() && outputLog.isNotBlank() &&
+            !outputLog.startsWith(context.getString(R.string.comput_console_cleared))
+        ) {
+            lines += ComputLogLine("$ ${lastRunCommand}", ComputLineKind.COMMAND)
         }
+        lines += parseLogLines(outputLog)
+        lines
+    }
 
-        // Quick Command Chips Carousel
-        item {
-            Row(
+    val visibleLines = remember(outputLines, searchActive, searchQuery) {
+        if (searchActive && searchQuery.isNotBlank()) {
+            outputLines.filter { it.text.contains(searchQuery, ignoreCase = true) }
+        } else {
+            outputLines
+        }
+    }
+
+    ShizukuScaffold(
+        title = stringResource(R.string.comput_title),
+        onNavigateUp = null
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            LazyColumn(
                 modifier = Modifier
+                    .widthIn(max = 840.dp)
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 2.dp)
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .align(Alignment.TopCenter),
+                contentPadding = PaddingValues(
+                    bottom = 112.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 12.dp
+                ),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                quickActionChips.forEach { chipText ->
-                    FilterChip(
-                        selected = command == chipText,
-                        onClick = { command = chipText },
-                        label = {
-                            Text(
-                                text = chipText,
-                                style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
-                                maxLines = 1
-                            )
-                        },
-                        shape = RoundedCornerShape(16.dp),
-                        colors = FilterChipDefaults.filterChipColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
-                        )
+                item {
+                    if (searchActive) {
+                        ComputSearchBar(
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    onClear = { searchQuery = "" },
+                    onClose = {
+                        searchActive = false
+                        searchQuery = ""
+                    }
+                )
+            } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.Search,
+                        contentDescription = stringResource(R.string.comput_search_desc),
+                        onClick = {
+                            searchActive = true
+                            searchQuery = ""
+                        }
+                    )
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.History,
+                        contentDescription = stringResource(R.string.comput_history_desc),
+                        onClick = {
+                            if (cmdHistory.isEmpty()) {
+                                Toast.makeText(context, context.getString(R.string.comput_history_empty), Toast.LENGTH_SHORT).show()
+                            } else {
+                                historyExpanded = true
+                            }
+                        }
+                    )
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.AutoAwesome,
+                        contentDescription = stringResource(R.string.comput_tab_commandium),
+                        onClick = { showCommandiumSheet = true }
+                    )
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.PlaylistPlay,
+                        contentDescription = stringResource(R.string.comput_tab_macros),
+                        onClick = { showMacrosSheet = true }
+                    )
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.Apps,
+                        contentDescription = stringResource(R.string.comput_tab_presets),
+                        onClick = { showPresetsSheet = true }
+                    )
+                    ComputUtilityButton(
+                        icon = Icons.Rounded.Clear,
+                        contentDescription = stringResource(R.string.comput_clear),
+                        onClick = { clearConsole() }
                     )
                 }
             }
-        }
+            }
 
-        // Command Input Field Card
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    TextButton(
+                        onClick = { isAdbMode = !isAdbMode },
+                        shape = CircleShape,
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Terminal,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = if (isAdbMode) {
+                                stringResource(R.string.comput_adb_mode)
+                            } else {
+                                stringResource(R.string.comput_sh_mode)
+                            },
+                            style = MaterialTheme.typography.labelLarge
+                        )
+                    }
+                }
+            }
+
+            item {
+                ExposedDropdownMenuBox(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    expanded = historyExpanded,
+                    onExpandedChange = { historyExpanded = it && cmdHistory.isNotEmpty() }
+                ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedTextField(
                         value = command,
                         onValueChange = { command = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .menuAnchor(
+                                ExposedDropdownMenuAnchorType.PrimaryEditable,
+                                enabled = true
+                            ),
+                        shape = RoundedCornerShape(22.dp),
                         textStyle = TextStyle(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 14.sp
@@ -655,277 +743,256 @@ fun ComputScreen() {
                         },
                         label = { Text(stringResource(R.string.comput_command_label)) },
                         placeholder = { Text(stringResource(R.string.comput_command_placeholder)) },
-                        maxLines = 4,
+                        maxLines = 3,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Ascii,
+                            imeAction = ImeAction.Send
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSend = { requestRun() }
+                        ),
                         colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
                         )
                     )
 
-                    Button(
-                        onClick = { requestRun() },
-                        enabled = !isRunning && command.isNotBlank(),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        shape = MaterialTheme.shapes.extraLarge,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    FloatingActionButton(
+                        modifier = Modifier.padding(top = 8.dp),
+                        onClick = {
+                            if (isRunning) {
+                                cancelRequested.set(true)
+                            } else {
+                                requestRun()
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.run {
+                            if (isRunning) errorContainer else primaryContainer
+                        },
+                        contentColor = MaterialTheme.colorScheme.run {
+                            if (isRunning) onErrorContainer else onPrimaryContainer
+                        }
                     ) {
-                        if (isRunning) {
-                            LoadingIndicator(
-                                Modifier.size(18.dp),
-                                MaterialTheme.colorScheme.onPrimary
+                        AnimatedContent(
+                            targetState = isRunning,
+                            transitionSpec = {
+                                (fadeIn(animationSpec = ComputSpring) +
+                                    scaleIn(initialScale = 0.6f, animationSpec = ComputSpring))
+                                    .togetherWith(
+                                        fadeOut(animationSpec = ComputSpring) +
+                                            scaleOut(targetScale = 0.6f, animationSpec = ComputSpring)
+                                    )
+                            },
+                            label = "run_stop_fab"
+                        ) { running ->
+                            if (running) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Stop,
+                                    contentDescription = stringResource(R.string.comput_stop_desc),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Rounded.Send,
+                                    contentDescription = stringResource(R.string.comput_run_desc),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                ExposedDropdownMenu(
+                    expanded = historyExpanded,
+                    onDismissRequest = { historyExpanded = false },
+                    modifier = Modifier.heightIn(max = 360.dp),
+                    scrollState = rememberScrollState()
+                ) {
+                    if (cmdHistory.isEmpty()) return@ExposedDropdownMenu
+                    Text(
+                        text = stringResource(R.string.comput_history_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                    cmdHistory.forEach { historyCommand ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = historyCommand,
+                                    maxLines = 1,
+                                    modifier = Modifier.basicMarquee()
+                                )
+                            },
+                            onClick = {
+                                command = historyCommand
+                                historyExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+            }
+
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    quickActionChips.forEach { chipText ->
+                        FilterChip(
+                            selected = command == chipText,
+                            onClick = { command = chipText },
+                            label = {
+                                Text(
+                                    text = chipText,
+                                    style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 11.sp),
+                                    maxLines = 1
+                                )
+                            },
+                            shape = RoundedCornerShape(16.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer
                             )
-                            Spacer(Modifier.width(8.dp))
-                            Text(stringResource(R.string.comput_status_running), fontWeight = FontWeight.Bold)
+                        )
+                    }
+                }
+            }
+
+            item {
+                ComputOutputCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .heightIn(min = 160.dp, max = 320.dp),
+                    lines = visibleLines,
+                    isRunning = isRunning,
+                    searchActive = searchActive,
+                    searchQuery = searchQuery,
+                    showGeminiSection = showGeminiSection,
+                    isExplaining = isExplaining,
+                    onToggleGemini = {
+                        if (!showGeminiSection && aiExplanation.isBlank() && !isExplaining) {
+                            triggerGeminiExplanation()
                         } else {
-                            Icon(
-                                imageVector = Icons.Rounded.PlayArrow,
-                                contentDescription = stringResource(R.string.comput_run),
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                stringResource(R.string.comput_run),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                            showGeminiSection = !showGeminiSection
+                        }
+                    },
+                    onCopyOutput = {
+                        copyToClipboard("ADB Output", outputLog, context.getString(R.string.comput_output_copied))
+                    },
+                    onClearOutput = { clearConsole() }
+                )
+            }
+
+            item {
+                AnimatedVisibility(visible = showGeminiSection) {
+                    Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .animateContentSize(),
+                    color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Rounded.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    text = stringResource(R.string.comput_gemini_explain),
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                if (aiExplanation.isNotBlank()) {
+                                    IconButton(
+                                        onClick = {
+                                            copyToClipboard("Gemini Analysis", aiExplanation, context.getString(R.string.comput_copied_to_clipboard))
+                                        },
+                                        modifier = Modifier.size(28.dp)
+                                    ) {
+                                        Icon(
+                                            Icons.Rounded.ContentCopy,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(14.dp),
+                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                        )
+                                    }
+                                }
+                                IconButton(
+                                    onClick = { showGeminiSection = false },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Rounded.Clear,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(14.dp),
+                                        tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                    )
+                                }
+                            }
+                        }
+
+                        if (isExplaining) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                LoadingIndicator(Modifier.size(16.dp), MaterialTheme.colorScheme.onSecondaryContainer)
+                                Text("Analyzing command & output...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                            }
+                        } else if (aiExplanation.isNotBlank()) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.15f))
+                            SelectionContainer {
+                                Text(
+                                    text = aiExplanation,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        } else {
+                            TextButton(
+                                onClick = { triggerGeminiExplanation() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Click to generate Gemini AI breakdown", style = MaterialTheme.typography.labelSmall)
+                            }
                         }
                     }
                 }
             }
-        }
+            }
 
-        // Terminal Output Canvas with Integrated Ask Gemini Action
-        item {
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                shape = MaterialTheme.shapes.extraLarge,
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest),
-                border = CardDefaults.outlinedCardBorder()
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Rounded.Terminal,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = stringResource(R.string.comput_terminal_header),
-                                style = TextStyle(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            )
-                        }
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            if (isRunning) {
-                                LoadingIndicator(
-                                    Modifier.size(14.dp),
-                                    MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            FilterChip(
-                                selected = showGeminiSection,
-                                onClick = {
-                                    if (!showGeminiSection && aiExplanation.isBlank() && !isExplaining) {
-                                        triggerGeminiExplanation()
-                                    } else {
-                                        showGeminiSection = !showGeminiSection
-                                    }
-                                },
-                                label = { Text(stringResource(R.string.comput_ask_gemini), style = MaterialTheme.typography.labelSmall) },
-                                leadingIcon = {
-                                    if (isExplaining) {
-                                        LoadingIndicator(Modifier.size(14.dp), MaterialTheme.colorScheme.primary)
-                                    } else {
-                                        Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
-                                    }
-                                },
-                                shape = CircleShape,
-                                colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f))
-                            )
-                            IconButton(
-                                onClick = {
-                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                    clipboard.setPrimaryClip(ClipData.newPlainText("ADB Output", outputLog))
-                                    Toast.makeText(context, context.getString(R.string.comput_output_copied), Toast.LENGTH_SHORT).show()
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.ContentCopy,
-                                    contentDescription = stringResource(R.string.comput_copy_output),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                            IconButton(
-                                onClick = {
-                                    command = ""
-                                    outputLog = context.getString(R.string.comput_console_cleared)
-                                    aiExplanation = ""
-                                    showGeminiSection = false
-                                },
-                                modifier = Modifier.size(32.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Rounded.Clear,
-                                    contentDescription = stringResource(R.string.comput_clear),
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 200.dp, max = 380.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                        shape = RoundedCornerShape(18.dp)
-                    ) {
-                        SelectionContainer {
-                            Text(
-                                text = annotatedOutput,
-                                modifier = Modifier.padding(14.dp),
-                                style = TextStyle(
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 12.5.sp,
-                                    lineHeight = 18.sp
-                                )
-                            )
-                        }
-                    }
-
-                    Spacer(Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Lines: ${outputLog.lineSequence().count()} | Chars: ${outputLog.length}",
-                            style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    // Integrated Expandable Gemini AI Explanation Block
-                    AnimatedVisibility(visible = showGeminiSection) {
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 10.dp)
-                                .animateContentSize(),
-                            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(16.dp)
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(12.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.AutoAwesome,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(16.dp),
-                                            tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                        Spacer(Modifier.width(6.dp))
-                                        Text(
-                                            text = stringResource(R.string.comput_gemini_explain),
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        if (aiExplanation.isNotBlank()) {
-                                            IconButton(
-                                                onClick = {
-                                                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                                    clipboard.setPrimaryClip(ClipData.newPlainText("Gemini Analysis", aiExplanation))
-                                                    Toast.makeText(context, context.getString(R.string.comput_copied_to_clipboard), Toast.LENGTH_SHORT).show()
-                                                },
-                                                modifier = Modifier.size(28.dp)
-                                            ) {
-                                                Icon(
-                                                    Icons.Rounded.ContentCopy,
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(14.dp),
-                                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                                )
-                                            }
-                                        }
-                                        IconButton(
-                                            onClick = { showGeminiSection = false },
-                                            modifier = Modifier.size(28.dp)
-                                        ) {
-                                            Icon(
-                                                Icons.Rounded.Clear,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(14.dp),
-                                                tint = MaterialTheme.colorScheme.onSecondaryContainer
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (isExplaining) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                    ) {
-                                        LoadingIndicator(Modifier.size(16.dp), MaterialTheme.colorScheme.onSecondaryContainer)
-                                        Text("Analyzing command & output...", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                                    }
-                                } else if (aiExplanation.isNotBlank()) {
-                                    HorizontalDivider(color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.15f))
-                                    SelectionContainer {
-                                        Text(
-                                            text = aiExplanation,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSecondaryContainer
-                                        )
-                                    }
-                                } else {
-                                    TextButton(
-                                        onClick = { triggerGeminiExplanation() },
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text("Click to generate Gemini AI breakdown", style = MaterialTheme.typography.labelSmall)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+            item {
+                Text(
+                    text = "Lines: ${outputLines.size} | Chars: ${outputLog.length}",
+                    style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 10.sp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                )
             }
         }
     }
@@ -939,7 +1006,9 @@ fun ComputScreen() {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(20.dp)
+                    .verticalScroll(rememberScrollState())
+                    .imePadding(),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
                 Row(
@@ -1053,9 +1122,7 @@ fun ComputScreen() {
                                 }
                                 IconButton(
                                     onClick = {
-                                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                                        clipboard.setPrimaryClip(ClipData.newPlainText("Commandium", generatedCommandiumResult))
-                                        Toast.makeText(context, context.getString(R.string.comput_copied_to_clipboard), Toast.LENGTH_SHORT).show()
+                                        copyToClipboard("Commandium", generatedCommandiumResult, context.getString(R.string.comput_copied_to_clipboard))
                                     }
                                 ) {
                                     Icon(Icons.Rounded.ContentCopy, contentDescription = null)
@@ -1386,40 +1453,376 @@ fun ComputScreen() {
         )
     }
 }
+}
 
-private fun buildAnnotatedLog(
-    text: String,
-    errorColor: Color,
-    warningColor: Color,
-    normalColor: Color
-): AnnotatedString {
-    return buildAnnotatedString {
-        val lines = text.split("\n")
-        lines.forEachIndexed { index, line ->
-            val isError = line.contains("error", ignoreCase = true) ||
-                    line.contains("failed", ignoreCase = true) ||
-                    line.contains("exception", ignoreCase = true) ||
-                    line.contains("[E]", ignoreCase = true) ||
-                    line.contains("denied", ignoreCase = true)
-            val isWarning = line.contains("warn", ignoreCase = true) ||
-                    line.contains("[W]", ignoreCase = true)
+@Composable
+private fun ComputUtilityButton(
+    icon: ImageVector,
+    contentDescription: String?,
+    onClick: () -> Unit
+) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier.size(42.dp),
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp)
+        )
+    }
+}
 
-            if (isError) {
-                withStyle(style = SpanStyle(color = errorColor, fontWeight = FontWeight.Bold)) {
-                    append(line)
+@Composable
+private fun ComputSearchBar(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit,
+    onClose: () -> Unit
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        shape = RoundedCornerShape(22.dp),
+        singleLine = true,
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+        },
+        trailingIcon = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (query.isNotEmpty()) {
+                    IconButton(onClick = onClear) {
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = stringResource(R.string.comput_clear_search_desc),
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 }
-            } else if (isWarning) {
-                withStyle(style = SpanStyle(color = warningColor, fontWeight = FontWeight.SemiBold)) {
-                    append(line)
+                IconButton(onClick = onClose) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = stringResource(R.string.comput_close_search_desc),
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
+            }
+        },
+        placeholder = { Text(stringResource(R.string.comput_search_hint)) },
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+        )
+    )
+}
+
+@Composable
+private fun ComputOutputCard(
+    modifier: Modifier = Modifier,
+    lines: List<ComputLogLine>,
+    isRunning: Boolean,
+    searchActive: Boolean,
+    searchQuery: String,
+    showGeminiSection: Boolean,
+    isExplaining: Boolean,
+    onToggleGemini: () -> Unit,
+    onCopyOutput: () -> Unit,
+    onClearOutput: () -> Unit
+) {
+    val dark = isSystemInDarkTheme()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    var userScrolledAway by remember { mutableStateOf(false) }
+
+    val isNearBottom by remember(lines) {
+        derivedStateOf {
+            val info = listState.layoutInfo
+            val total = info.totalItemsCount
+            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
+            total == 0 || lastVisible >= total - 2
+        }
+    }
+
+    val showScrollFab by remember(lines) {
+        derivedStateOf {
+            lines.size > 4 && !isNearBottom && !searchActive
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress, isNearBottom, isRunning) {
+        if (isRunning && listState.isScrollInProgress && !isNearBottom) {
+            userScrolledAway = true
+        } else if (isNearBottom) {
+            userScrolledAway = false
+        }
+    }
+
+    LaunchedEffect(lines.size, isRunning, userScrolledAway) {
+        if (isRunning && !userScrolledAway && lines.isNotEmpty()) {
+            listState.scrollToItem(lines.lastIndex)
+        }
+    }
+
+    LaunchedEffect(isRunning) {
+        if (!isRunning && lines.isNotEmpty()) {
+            listState.animateScrollToItem(lines.lastIndex)
+        }
+    }
+
+    Card(
+        modifier = modifier,
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = if (dark) {
+                MaterialTheme.colorScheme.surfaceContainerLowest
             } else {
-                withStyle(style = SpanStyle(color = normalColor)) {
-                    append(line)
+                MaterialTheme.colorScheme.surfaceContainerLow
+            }
+        )
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        if (dark) {
+                            MaterialTheme.colorScheme.surfaceContainerLow
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainer
+                        }
+                    )
+                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.comput_output_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    if (isRunning) {
+                        LoadingIndicator(
+                            Modifier.size(14.dp),
+                            MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    FilterChip(
+                        selected = showGeminiSection,
+                        onClick = onToggleGemini,
+                        label = { Text(stringResource(R.string.comput_ask_gemini), style = MaterialTheme.typography.labelSmall) },
+                        leadingIcon = {
+                            if (isExplaining) {
+                                LoadingIndicator(Modifier.size(14.dp), MaterialTheme.colorScheme.primary)
+                            } else {
+                                Icon(Icons.Rounded.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
+                            }
+                        },
+                        shape = CircleShape,
+                        colors = FilterChipDefaults.filterChipColors(containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.6f))
+                    )
+                    IconButton(
+                        onClick = onCopyOutput,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.ContentCopy,
+                            contentDescription = stringResource(R.string.comput_copy_output),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    IconButton(
+                        onClick = onClearOutput,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Clear,
+                            contentDescription = stringResource(R.string.comput_clear),
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
-            if (index < lines.lastIndex) {
-                append("\n")
+
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (searchActive && searchQuery.isNotBlank() && lines.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.comput_no_search_results),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    SelectionContainer {
+                        LazyColumn(
+                            state = listState,
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = 16.dp,
+                                end = 16.dp,
+                                top = 10.dp,
+                                bottom = 16.dp
+                            ),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            itemsIndexed(lines) { index, line ->
+                                ComputOutputLine(
+                                    line = line,
+                                    searchQuery = if (searchActive) searchQuery else "",
+                                    isCommand = index == 0 && line.kind == ComputLineKind.COMMAND
+                                )
+                            }
+                        }
+                    }
+                }
+
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showScrollFab,
+                    modifier = Modifier.align(Alignment.BottomEnd),
+                    enter = scaleIn(animationSpec = ComputSpring) + fadeIn(animationSpec = ComputSpring),
+                    exit = scaleOut(animationSpec = ComputSpring) + fadeOut(animationSpec = ComputSpring)
+                ) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            if (lines.isNotEmpty()) {
+                                scope.launch {
+                                    listState.animateScrollToItem(lines.lastIndex)
+                                }
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.padding(10.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.KeyboardDoubleArrowDown,
+                            contentDescription = stringResource(R.string.comput_scroll_bottom_desc)
+                        )
+                    }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun ComputOutputLine(
+    line: ComputLogLine,
+    searchQuery: String,
+    isCommand: Boolean
+) {
+    val baseColor = when (line.kind) {
+        ComputLineKind.COMMAND -> MaterialTheme.colorScheme.primary
+        ComputLineKind.ERROR -> MaterialTheme.colorScheme.error
+        ComputLineKind.WARNING -> MaterialTheme.colorScheme.tertiary
+        ComputLineKind.NORMAL -> MaterialTheme.colorScheme.onSurface
+    }
+    val fontWeight = when (line.kind) {
+        ComputLineKind.COMMAND -> FontWeight.Bold
+        ComputLineKind.ERROR -> FontWeight.SemiBold
+        else -> FontWeight.Normal
+    }
+    val text = if (searchQuery.isNotBlank()) {
+        val (highlightBg, highlightFg) = when (line.kind) {
+            ComputLineKind.ERROR -> MaterialTheme.colorScheme.errorContainer to MaterialTheme.colorScheme.onErrorContainer
+            ComputLineKind.WARNING -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+            else -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        }
+        highlightQuery(line.text, searchQuery, highlightBg, highlightFg)
+    } else {
+        AnnotatedString(line.text)
+    }
+
+    Text(
+        text = text,
+        style = TextStyle(
+            fontFamily = FontFamily.Monospace,
+            fontSize = 13.sp,
+            lineHeight = 19.sp,
+            fontWeight = fontWeight
+        ),
+        color = baseColor,
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isCommand) {
+                    Modifier.padding(top = 12.dp, bottom = 4.dp)
+                } else {
+                    Modifier
+                }
+            )
+    )
+}
+
+private fun parseLogLines(text: String): List<ComputLogLine> {
+    val result = mutableListOf<ComputLogLine>()
+    text.split("\n").forEach { raw ->
+        val line = raw.trimEnd()
+        if (line.isEmpty()) return@forEach
+        val lower = line.lowercase()
+        val kind = when {
+            line.startsWith("> ") || line.startsWith("Running macro:") -> ComputLineKind.COMMAND
+            line.contains("[E]", ignoreCase = true) ||
+                line.contains("error", ignoreCase = true) ||
+                line.contains("failed", ignoreCase = true) ||
+                line.contains("exception", ignoreCase = true) ||
+                line.contains("denied", ignoreCase = true) -> ComputLineKind.ERROR
+            line.contains("[W]", ignoreCase = true) ||
+                lower.contains("warn") -> ComputLineKind.WARNING
+            else -> ComputLineKind.NORMAL
+        }
+        result += ComputLogLine(line, kind)
+    }
+    return result
+}
+
+private fun highlightQuery(
+    text: String,
+    query: String,
+    background: Color,
+    foreground: Color
+): AnnotatedString {
+    if (query.isBlank()) return AnnotatedString(text)
+    return buildAnnotatedString {
+        val lowerText = text.lowercase()
+        val lowerQuery = query.lowercase()
+        var index = 0
+        while (index < text.length) {
+            val match = lowerText.indexOf(lowerQuery, index)
+            if (match < 0) {
+                append(text.substring(index))
+                break
+            }
+            if (match > index) {
+                append(text.substring(index, match))
+            }
+            withStyle(
+                style = SpanStyle(
+                    background = background,
+                    color = foreground,
+                    fontWeight = FontWeight.Bold
+                )
+            ) {
+                append(text.substring(match, match + lowerQuery.length))
+            }
+            index = match + lowerQuery.length
         }
     }
 }
@@ -1486,11 +1889,19 @@ private suspend fun explainCommandWithGemini(
     }
 }
 
-private fun readStreamTail(pfd: ParcelFileDescriptor): String {
+private fun readStreamTail(
+    pfd: ParcelFileDescriptor,
+    cancelRequested: AtomicBoolean,
+    onCancel: () -> Unit
+): String {
     return ParcelFileDescriptor.AutoCloseInputStream(pfd).reader(Charsets.UTF_8).use { reader ->
         val buffer = CharArray(8192)
         val tail = StringBuilder()
         while (true) {
+            if (cancelRequested.get()) {
+                onCancel()
+                break
+            }
             val read = reader.read(buffer)
             if (read <= 0) break
             tail.append(buffer, 0, read)

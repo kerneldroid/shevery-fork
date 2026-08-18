@@ -4,11 +4,17 @@ import android.app.UiModeManager
 import android.content.Context
 import android.content.res.Configuration
 import android.os.SystemProperties
+import android.util.Log
+import com.topjohnwu.superuser.Shell
+import moe.shizuku.manager.ShizukuSettings
+import moe.shizuku.manager.application
 import java.io.File
 import java.net.InetSocketAddress
 import java.net.Socket
 
 object EnvironmentUtils {
+
+    private const val TAG = "EnvironmentUtils"
 
     @JvmStatic
     fun isWatch(context: Context): Boolean {
@@ -18,12 +24,19 @@ object EnvironmentUtils {
 
     @JvmStatic
     fun isTV(context: Context): Boolean {
-        return (context.getSystemService(UiModeManager::class.java).currentModeType
-                == Configuration.UI_MODE_TYPE_TELEVISION)
+        val uiModeManager = context.getSystemService(UiModeManager::class.java)
+        val isLeanback = context.packageManager.hasSystemFeature("android.hardware.leanback")
+        return (uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_TELEVISION)
+            || (isLeanback && uiModeManager.currentModeType == Configuration.UI_MODE_TYPE_NORMAL)
+    }
+
+    @JvmStatic
+    fun isTelevision(): Boolean {
+        return isTV(application)
     }
 
     fun isRooted(): Boolean {
-        return System.getenv("PATH")?.split(File.pathSeparatorChar)?.find { File("$it/su").exists() } != null
+        return Shell.getShell().isRoot
     }
 
     fun getAdbTcpPort(): Int {
@@ -50,5 +63,20 @@ object EnvironmentUtils {
         } catch (_: Exception) {
             false
         }
+    }
+
+    /**
+     * Returns true if wireless debugging (mDNS) discovery is required to find
+     * the ADB port. Returns false (use TCP directly) when:
+     * - A TCP port is configured AND we're in TCP mode, OR
+     * - A TCP port is configured AND the device is a TV (TVs use static TCP without mDNS)
+     */
+    @JvmStatic
+    fun isWifiRequired(): Boolean {
+        val hasTcpPort = getAdbTcpPort() > 0
+        val isTv = isTelevision()
+        val inTcpMode = ShizukuSettings.isTcpMode()
+        // Use TCP directly if: port configured + (TCP mode OR TV device)
+        return !(hasTcpPort && (inTcpMode || isTv))
     }
 }

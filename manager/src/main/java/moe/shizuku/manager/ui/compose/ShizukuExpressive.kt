@@ -112,6 +112,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -334,7 +337,7 @@ fun ShizukuScaffold(
 ) {
     if (onNavigateUp != null) {
         val navBarState = LocalFloatingNavBarVisible.current
-        DisposableEffect(onNavigateUp) {
+        DisposableEffect(Unit) {
             navBarState.value = false
             onDispose {
                 navBarState.value = true
@@ -387,6 +390,8 @@ fun ShizukuLazyScaffold(
     contentPadding: PaddingValues = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
     bottomInset: Dp = 0.dp,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(10.dp),
+    isRefreshing: Boolean = false,
+    onRefresh: (() -> Unit)? = null,
     content: LazyListScope.() -> Unit
 ) {
     ShizukuScaffold(
@@ -398,20 +403,45 @@ fun ShizukuLazyScaffold(
         actions = actions
     ) { innerPadding ->
         val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues()
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(
-                start = contentPadding.calculateStartPadding(LayoutDirection.Ltr),
-                top = contentPadding.calculateTopPadding(),
-                end = contentPadding.calculateEndPadding(LayoutDirection.Ltr),
-                bottom = contentPadding.calculateBottomPadding() +
-                    navigationBarPadding.calculateBottomPadding() + bottomInset
-            ),
-            verticalArrangement = verticalArrangement,
-            content = content
-        )
+        val list = @Composable {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(
+                    start = contentPadding.calculateStartPadding(LayoutDirection.Ltr),
+                    top = contentPadding.calculateTopPadding(),
+                    end = contentPadding.calculateEndPadding(LayoutDirection.Ltr),
+                    bottom = contentPadding.calculateBottomPadding() +
+                        navigationBarPadding.calculateBottomPadding() + bottomInset
+                ),
+                verticalArrangement = verticalArrangement,
+                content = content
+            )
+        }
+        if (onRefresh != null) {
+            val pullToRefreshState = rememberPullToRefreshState()
+            Box(modifier = Modifier.fillMaxSize()) {
+                PullToRefreshBox(
+                    modifier = Modifier.fillMaxSize(),
+                    isRefreshing = isRefreshing,
+                    onRefresh = onRefresh,
+                    state = pullToRefreshState,
+                    indicator = {}
+                ) {
+                    list()
+                }
+                PullToRefreshDefaults.LoadingIndicator(
+                    state = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 8.dp)
+                )
+            }
+        } else {
+            list()
+        }
     }
 }
 
