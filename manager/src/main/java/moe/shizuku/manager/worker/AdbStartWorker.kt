@@ -9,10 +9,12 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
@@ -33,6 +35,7 @@ import moe.shizuku.manager.receiver.ShizukuReceiverStarter
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.utils.ShizukuStateMachine
+import moe.shizuku.manager.AppConstants
 import java.io.EOFException
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
@@ -60,9 +63,6 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                 request
             )
         }
-
-        const val CHANNEL_ID = "AdbStartWorker"
-        const val NOTIFICATION_ID = 1448
     }
 
     override suspend fun doWork(): Result {
@@ -88,8 +88,16 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
 
             val cr = applicationContext.contentResolver
 
-            Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
-            Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            // Check WRITE_SECURE_SETTINGS before modifying secure settings
+            val hasSecureSettingsPermission = applicationContext.checkSelfPermission(
+                android.Manifest.permission.WRITE_SECURE_SETTINGS
+            ) == PackageManager.PERMISSION_GRANTED
+            if (hasSecureSettingsPermission) {
+                Settings.Global.putInt(cr, Settings.Global.ADB_ENABLED, 1)
+                Settings.Global.putLong(cr, "adb_allowed_connection_time", 0L)
+            } else {
+                Log.d(AppConstants.TAG, "WRITE_SECURE_SETTINGS not granted, skipping ADB secure settings")
+            }
 
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
 
@@ -126,15 +134,21 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
                                 override fun onReceive(context: Context, intent: Intent) {
                                     if (intent.action == Intent.ACTION_USER_PRESENT) {
                                         context.unregisterReceiver(this)
+                                        unlockReceiver = null
                                         Settings.Global.putInt(cr, "adb_wifi_enabled", 1)
                                     }
                                 }
+                            }
+                            val receiverFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                ContextCompat.RECEIVER_EXPORTED
+                            } else {
+                                ContextCompat.RECEIVER_NOT_EXPORTED
                             }
                             ContextCompat.registerReceiver(
                                 applicationContext,
                                 unlockReceiver,
                                 filter,
-                                ContextCompat.RECEIVER_EXPORTED
+                                receiverFlags
                             )
                         } else {
                             awaitingAuth = true
@@ -187,7 +201,7 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
             val state = if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
                 ShizukuReceiverStarter.WorkerState.AWAITING_RETRY
             } else {
-                when (stopReason) {
+                when (getStopReason()) {
                     WorkInfo.STOP_REASON_CONSTRAINT_CONNECTIVITY -> ShizukuReceiverStarter.WorkerState.AWAITING_WIFI
                     WorkInfo.STOP_REASON_CANCELLED_BY_APP -> ShizukuReceiverStarter.WorkerState.STOPPED
                     else -> ShizukuReceiverStarter.WorkerState.AWAITING_RETRY
@@ -227,25 +241,18 @@ class AdbStartWorker(context: Context, params: WorkerParameters) : CoroutineWork
     }
 
     private fun showErrorNotification(context: Context, e: Exception) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                context.getString(R.string.wadb_notification_title),
-                NotificationManager.IMPORTANCE_LOW
-            )
-            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.createNotificationChannel(channel)
-        }
+        // Use ShizukuReceiverStarter's channel to avoid duplicate channel creation
+        ShizukuReceiverStarter.ensureChannel(context)
 
         val intent = Intent(context, SheveryControlReceiver::class.java).apply {
             action = SheveryControlReceiver.ACTION_START_SERVER
         }
         val pendingIntent = PendingIntent.getBroadcast(
-            context, 0, intent,
+            context, 0x7F010006, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val notification = NotificationCompat.Builder(context, ShizukuReceiverStarter.CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_system_icon)
             .setContentTitle(context.getString(R.string.wadb_error_title))
             .setContentText(context.getString(R.string.wadb_error_notify_dev))

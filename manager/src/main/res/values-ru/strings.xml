@@ -108,7 +108,7 @@
     <string name="notification_startup_started">Shevery запущена.</string>
     <string name="notification_startup_failed">Не удалось запустить Shevery.</string>
     <string name="notification_startup_no_port">Порт беспроводной отладки не найден в течение 15 секунд.</string>
-    <string name="notification_startup_no_permission">Не удалось запустить при загрузке: не предоставлено разрешение на доступ к локальной сети. Откройте Shevery и предоставьте разрешение.</string>
+    <string name="notification_startup_no_permission">Не удалось запустить при загрузке: разрешение WRITE_SECURE_SETTINGS не выдано. Откройте Shevery и выдайте разрешение.</string>
     <string name="notification_startup_waiting_unlock">Ожидание разблокировки устройства для запуска…</string>
     <string name="notification_startup_cancel">Отмена</string>
     <string name="notification_startup_attempt_now">Повторить сейчас</string>
@@ -118,9 +118,9 @@
     <string name="wadb_notification_wifi_required">Ожидание подключения Wi-Fi перед продолжением</string>
     <string name="wadb_notification_retry">Ожидание повторной попытки</string>
     <string name="wadb_error_title">Ошибка при запуске загрузки</string>
-    <string name="wadb_error_notify_dev">Нажмите, чтобы уведомить разработчика.</string>
+    <string name="wadb_error_notify_dev">Нажмите, чтобы перезапустить.</string>
     <string name="wadb_permission_error_notification_title">Ошибка разрешения</string>
-    <string name="wadb_permission_error_notification_content">Для запуска Shevery при загрузке требуется разрешение WRITE_SECURE_SETTINGS. Нажмите, чтобы узнать, как его предоставить.</string>
+    <string name="wadb_permission_error_notification_content">Shevery не смогла запуститься при загрузке. Откройте Shevery, чтобы узнать проблему.</string>
     <string name="wadb_notification_channel">Служба автоматического запуска ADB</string>
     <string name="wadb_notification_attempt_now">Попробуй сейчас</string>
     <string name="grant_dialog_button_allow_always">Разрешить всегда</string>
@@ -364,8 +364,8 @@
     <string name="home_diagnostics_title">Диагностика</string>
     <string name="home_diagnostics_copy">Скопировать диагностику</string>
     <string name="home_diagnostics_copied">Данные диагностики скопированы.</string>
-    <string name="permission_group_label">Shevery</string>
-    <string name="permission_group_description">@string/permission_label</string>
+    <string name="permission_group_label" translatable="false">Shevery</string>
+    <string name="permission_group_description" translatable="false">@string/permission_label</string>
     <string name="starting_root_shell">Запуск root-оболочки…</string>
     <string name="home_dhizuku_title">Запуск (через Dhizuku)</string>
     <string name="home_dhizuku_description">Для устройств под управлением Dhizuku вы можете запустить Shevery напрямую, используя привилегии владельца устройства.</string>

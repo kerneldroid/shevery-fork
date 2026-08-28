@@ -164,7 +164,7 @@ object WatchdogManager {
 
         val intent = Intent(context, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            context, 0, intent,
+            context, 0x7F050001, intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
@@ -298,7 +298,7 @@ object WatchdogManager {
             val binder = Shizuku.getBinder() ?: return "binder was null"
             val service = IShizukuService.Stub.asInterface(binder)
             val process = service.newProcess(
-                arrayOf("sh", "-c", "for pid in $(pidof shizuku_server 2>/dev/null); do kill -9 \"\$pid\"; done"),
+                arrayOf("sh", "-c", "for pid in $(pidof shevery_server 2>/dev/null); do kill -9 \"\$pid\"; done"),
                 null,
                 null
             )

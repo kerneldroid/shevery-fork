@@ -95,22 +95,14 @@ class WatchdogService : Service() {
 
     private fun buildNotification(): Notification {
         val notificationManager = getSystemService(NotificationManager::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(
-                NotificationChannel(
-                    CHANNEL_ID,
-                    getString(R.string.notification_channel_watchdog),
-                    NotificationManager.IMPORTANCE_LOW
-                )
-            )
-        }
+        ensureChannel(notificationManager)
 
         val launchIntent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val launchPendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            0x7F030001,
             launchIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -126,9 +118,24 @@ class WatchdogService : Service() {
             .build()
     }
 
+    private fun ensureChannel(notificationManager: NotificationManager) {
+        if (channelCreated) return
+        channelCreated = true
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(
+                NotificationChannel(
+                    CHANNEL_ID,
+                    getString(R.string.notification_channel_watchdog),
+                    NotificationManager.IMPORTANCE_LOW
+                )
+            )
+        }
+    }
+
     companion object {
         private const val CHANNEL_ID = "service_watchdog"
-        private const val NOTIFICATION_ID = 1003
+        private const val NOTIFICATION_ID = 1004
+        private var channelCreated = false
 
         fun reconcile(context: Context) {
             val appContext = context.applicationContext

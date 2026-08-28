@@ -350,7 +350,7 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="notification_startup_started">Shevery started.</string>
     <string name="notification_startup_failed">Failed to start Shevery.</string>
     <string name="notification_startup_no_port">Wireless debugging port not found within 15 seconds.</string>
-    <string name="notification_startup_no_permission">Cannot start on boot: local network permission not granted. Open Shevery and grant the permission first.</string>
+    <string name="notification_startup_no_permission">Cannot start on boot: a required permission is not granted. Open Shevery and grant the permission first.</string>
     <string name="notification_startup_waiting_unlock">Waiting for device unlock to start…</string>
     <string name="notification_startup_cancel">Cancel</string>
     <string name="notification_startup_attempt_now">Attempt now</string>
@@ -360,9 +360,9 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="wadb_notification_wifi_required">Awaiting Wi-Fi connection before proceeding</string>
     <string name="wadb_notification_retry">Waiting to retry</string>
     <string name="wadb_error_title">Error while starting on boot</string>
-    <string name="wadb_error_notify_dev">Tap to notify the developer.</string>
+    <string name="wadb_error_notify_dev">Tap to restart Shevery.</string>
     <string name="wadb_permission_error_notification_title">Permission Error</string>
-    <string name="wadb_permission_error_notification_content">Shevery needs WRITE_SECURE_SETTINGS to start on boot. Tap to learn how to grant it.</string>
+    <string name="wadb_permission_error_notification_content">Shevery could not start on boot. Open Shevery to check the issue.</string>
     <string name="wadb_notification_channel">ADB auto-start service</string>
     <string name="wadb_notification_attempt_now">Attempt now</string>
 

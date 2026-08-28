@@ -17,6 +17,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -121,12 +122,12 @@ class AccessibilityDaemonService : Service() {
             addAction(Intent.ACTION_SCREEN_ON)
             addAction(Intent.ACTION_USER_PRESENT)
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(screenOnReceiver, filter, RECEIVER_NOT_EXPORTED)
+        val receiverFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.RECEIVER_NOT_EXPORTED
         } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(screenOnReceiver, filter)
+            ContextCompat.RECEIVER_EXPORTED
         }
+        ContextCompat.registerReceiver(this, screenOnReceiver, filter, receiverFlags)
     }
 
     private fun unregisterReceiverSafe(receiver: BroadcastReceiver) {
@@ -174,7 +175,7 @@ class AccessibilityDaemonService : Service() {
         createChannel()
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
-            this, 0, notificationIntent,
+            this, 101, notificationIntent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
@@ -188,7 +189,7 @@ class AccessibilityDaemonService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         } else {
             startForeground(NOTIFICATION_ID, notification)
@@ -196,6 +197,8 @@ class AccessibilityDaemonService : Service() {
     }
 
     private fun createChannel() {
+        if (channelCreated) return
+        channelCreated = true
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             val channel = NotificationChannel(
@@ -211,9 +214,10 @@ class AccessibilityDaemonService : Service() {
 
     companion object {
         private const val CHANNEL_ID = "accessibility_keep_alive"
-        private const val NOTIFICATION_ID = 1003
+        private const val NOTIFICATION_ID = 1006
         private const val HEARTBEAT_INTERVAL_MS = 60_000L
         private const val MIN_CHECK_INTERVAL_MS = 2_000L
+        private var channelCreated = false
 
         /**
          * Start the daemon if the master switch is on and there is at least

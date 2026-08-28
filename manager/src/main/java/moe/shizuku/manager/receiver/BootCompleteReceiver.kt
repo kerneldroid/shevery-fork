@@ -35,13 +35,38 @@ class BootCompleteReceiver : BroadcastReceiver() {
         if (UserHandleCompat.myUserId() > 0 || Shizuku.pingBinder()) return
 
         if (ShizukuSettings.getStartOnBootAdb()
-            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
-            && context.checkSelfPermission(WRITE_SECURE_SETTINGS) == PackageManager.PERMISSION_GRANTED
-        ) {
+            && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
+                moe.shizuku.manager.service.StartupNotificationManager.showFailed(
+                    context,
+                    context.getString(moe.shizuku.manager.R.string.notification_startup_no_permission)
+                )
+                return
+            }
+            // On API 33+ (Android 13+), Wi-Fi/mDNS discovery requires NEARBY_WIFI_DEVICES
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && context.checkSelfPermission(NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
+                moe.shizuku.manager.service.StartupNotificationManager.showFailed(
+                    context,
+                    context.getString(moe.shizuku.manager.R.string.notification_startup_no_permission)
+                )
+                return
+            }
+            // On API 36+ (Android 16+), local network access requires ACCESS_LOCAL_NETWORK
+            val ACCESS_LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
+            if (Build.VERSION.SDK_INT >= 36
+                && context.checkSelfPermission(ACCESS_LOCAL_NETWORK_PERMISSION)
+                        != PackageManager.PERMISSION_GRANTED) {
+                moe.shizuku.manager.service.StartupNotificationManager.showFailed(
+                    context,
+                    context.getString(moe.shizuku.manager.R.string.notification_startup_no_permission)
+                )
+                return
+            }
             val tcpPort = EnvironmentUtils.getAdbTcpPort()
             if (tcpPort > 0 && (EnvironmentUtils.isTV(context) || ShizukuSettings.isTcpMode())) {
                 ShizukuReceiverStarter.start(context)
-            } else if (hasLocalNetworkPermission(context)) {
+            } else {
                 val km = context.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
                 val isPreS = Build.VERSION.SDK_INT < Build.VERSION_CODES.S
                 if (km != null && km.isKeyguardLocked && isPreS) {
@@ -49,12 +74,6 @@ class BootCompleteReceiver : BroadcastReceiver() {
                 } else {
                     ShizukuReceiverStarter.start(context)
                 }
-            } else {
-                Log.w(AppConstants.TAG, "Start-on-boot ADB skipped: missing local network permission")
-                moe.shizuku.manager.service.StartupNotificationManager.showFailed(
-                    context,
-                    context.getString(moe.shizuku.manager.R.string.notification_startup_no_permission)
-                )
             }
         } else if (ShizukuSettings.getStartOnBoot()
             && ShizukuSettings.getLastLaunchMode() == LaunchMethod.ROOT) {
@@ -98,11 +117,16 @@ class BootCompleteReceiver : BroadcastReceiver() {
         }
 
         try {
+            val receiverFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                ContextCompat.RECEIVER_EXPORTED
+            } else {
+                0 // No flag needed on pre-S
+            }
             ContextCompat.registerReceiver(
                 appContext,
                 unlockReceiver,
                 IntentFilter(Intent.ACTION_USER_PRESENT),
-                ContextCompat.RECEIVER_EXPORTED
+                receiverFlags
             )
         } catch (e: Exception) {
             Log.w(AppConstants.TAG, "Failed to register unlock receiver", e)
@@ -130,8 +154,9 @@ class BootCompleteReceiver : BroadcastReceiver() {
             && context.checkSelfPermission(NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
             return false
         }
+        val ACCESS_LOCAL_NETWORK_PERMISSION = "android.permission.ACCESS_LOCAL_NETWORK"
         if (Build.VERSION.SDK_INT >= 36
-            && context.checkSelfPermission("android.permission.ACCESS_LOCAL_NETWORK")
+            && context.checkSelfPermission(ACCESS_LOCAL_NETWORK_PERMISSION)
                     != PackageManager.PERMISSION_GRANTED) {
             return false
         }

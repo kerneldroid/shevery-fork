@@ -10,7 +10,7 @@
     <string name="home_status_service_version">版本 %2$s, %1$s</string>
     <string name="home_status_service_version_update"><![CDATA[版本 %2$s, %1$s<br>重新启动以更新到版本 %3$s]]></string>
     <string name="home_adb_title"><![CDATA[通过连接电脑启动]]></string>
-    <string name="home_adb_description"><![CDATA[对于未 root 的设备，需要使用 ADB 启动 Shevery（需要连接电脑）。每次重新启动设备后都需要重复此过程。请<b><a href="%1$s">阅读帮助文档</a></b>。]]></string>
+    <string name="home_adb_description"><![CDATA[对于未 Root 的设备，需要使用 ADB 启动 Shevery（需要连接电脑）。每次重新启动设备后都需要重复此过程。请<b><a href="%1$s">阅读帮助文档</a></b>。]]></string>
     <string name="home_adb_button_view_help">阅读帮助</string>
     <string name="home_adb_button_view_command">查看命令</string>
     <string name="home_adb_dialog_view_command_message"><![CDATA[<font face="monospace">%1$s</font><br><br>* 还有其他注意事项，请先确认您已阅读帮助文档。]]></string>
@@ -56,9 +56,9 @@
     <string name="adb_pairing_tutorial_content_finish">返回 Shevery 并启动服务。</string>
     <string name="adb_pairing_tutorial_content_network">Shevery 需要访问本地网络。</string>
     <string name="adb_pairing_tutorial_content_network_limation_not_foreground">某些系统（如 MIUI）在应用未处于前台时会禁用网络访问。请为 Shevery 关闭电池优化。</string>
-    <string name="home_root_title"><![CDATA[启动（针对已 root 设备）]]></string>
+    <string name="home_root_title"><![CDATA[启动（针对已 Root 设备）]]></string>
     <string name="home_root_description"><![CDATA[此外，Shevery 可以在开机时自动启动。如果未启动，请检查系统或第三方工具是否限制了 Shevery。<br>可以参考 %s。]]></string>
-    <string name="home_root_description_sui"><![CDATA[如果您正在使用 Magisk，可以尝试 %1$s。对于 root 用户，它最终将取代 Shevery。]]></string>
+    <string name="home_root_description_sui"><![CDATA[如果您正在使用 Magisk，可以尝试 %1$s。对于 Root 用户，它最终将取代 Shevery。注意，现有应用需稍作修改方可使用 %2$s。]]></string>
     <string name="home_root_button_start">启动</string>
     <string name="home_root_button_restart">重新启动</string>
     <string name="home_app_management_title">应用管理</string>
@@ -85,6 +85,7 @@
     <string name="app_management_dialog_adb_is_limited_title">ADB 权限受限</string>
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[您的设备厂商很有可能限制了 ADB 权限。<p>您可以在<b><a href="%1$s">此文档</a></b>中找到针对您系统的解决方案。]]></string>
     <string name="app_management_item_summary_requires_root">* 需要 Shevery 以 Root 方式运行</string>
+    <string name="app_management_loading">正在加载应用…</string>
     <string name="home_terminal_title">在终端应用中使用 Shevery</string>
     <string name="home_terminal_description">在您喜爱的终端应用中通过 Shevery 执行命令</string>
     <string name="terminal_tutorial_1">首先，将文件导出到您选择的任何位置。您将找到两个文件：%1$s 和 %2$s。</string>
@@ -109,7 +110,7 @@
     <string name="settings_use_system_color">使用系统主题颜色</string>
     <string name="modules_title">ADB 模块</string>
     <string name="modules_settings_title">模块</string>
-    <string name="modules_settings_summary">安装 ZIP 模块并通过 Shevery 活跃的 ADB/root 服务执行其操作</string>
+    <string name="modules_settings_summary">安装 ZIP 模块并通过 Shevery 活跃的 ADB/Root 服务执行其操作</string>
     <string name="modules_header_summary">已安装 %1$d 个，已启用 %2$d 个</string>
     <string name="modules_version_label">版本：%s</string>
     <string name="modules_author_label">作者：%s</string>
@@ -247,12 +248,12 @@
     <string name="dhizuku_warning_title">警告：Dhizuku 模式</string>
     <string name="dhizuku_warning_message">Dhizuku 专为设备所有者特权设计。部分 Shell 和 ADB 命令可能无法正常工作。是否继续？</string>
     <string name="settings_tcp_mode">TCP 模式</string>
-    <string name="settings_tcp_mode_summary">在 TCP 5555 端口上重启 ADB 服务，无需依赖无线调试端口变化即可重新连接。</string>
+    <string name="settings_tcp_mode_summary">将 ADB 启动重新绑定到 TCP 5555 端口，使 Shevery 无需依赖不断变化的无线调试端口即可重新连接。</string>
     <string name="settings_restart_dialog_title">需要重新启动</string>
     <string name="settings_restart_dialog_message">Shevery 需要重新启动以应用 TCP 模式设置。</string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[
 
-首次重启时需要 Wi-Fi 连接。]]></string>
+首次重启时需要 Wi-Fi 连接，因为 Shevery 必须在将 ADB 切换到 5555 之前连接到当前的无线调试端口。]]></string>
     <string name="settings_auto_disable_usb_debugging">自动关闭 USB 调试</string>
     <string name="settings_auto_disable_usb_debugging_summary">重启后若 Shevery 未设置为开机自启，则自动关闭 USB 调试</string>
     <string name="settings_service_group">服务维护</string>
@@ -380,7 +381,7 @@
     <string name="comput_running_macro">正在运行宏：%1$s</string>
     <string name="comput_executing_cmd">> 正在执行命令：%1$s</string>
     <string name="comput_error_not_running">错误：Shevery 特权服务未运行，请先启动服务。</string>
-    <string name="comput_error_no_binder">错误：无法获取 Shevery binder。</string>
+    <string name="comput_error_no_binder">错误：无法获取 Shevery Binder。</string>
     <string name="comput_console_initialized">控制台已初始化。已连接到特权服务。\n就绪。</string>
     <string name="comput_ai_explanation">AI 解释</string>
     <string name="comput_commandium">Commandium</string>
@@ -422,6 +423,19 @@
     <string name="comput_terminal_header">SHELL 输出</string>
     <string name="comput_presets_title">预设库</string>
     <string name="comput_presets_subtitle">点按任意命令即可快速运行或自动填入终端提示符。</string>
+    <string name="comput_output_label">输出</string>
+    <string name="comput_search_desc">搜索输出</string>
+    <string name="comput_search_hint">搜索输出</string>
+    <string name="comput_no_search_results">未找到匹配的输出</string>
+    <string name="comput_clear_search_desc">清除搜索</string>
+    <string name="comput_close_search_desc">关闭搜索</string>
+    <string name="comput_history_desc">命令历史</string>
+    <string name="comput_history_title">历史</string>
+    <string name="comput_history_empty">暂无命令历史</string>
+    <string name="comput_run_desc">运行命令</string>
+    <string name="comput_stop_desc">停止命令</string>
+    <string name="comput_scroll_bottom_desc">滚动到底部</string>
+    <string name="comput_cancelled">命令已被用户取消。</string>
     <string name="diagnostics_app">应用</string>
     <string name="diagnostics_android">Android</string>
     <string name="diagnostics_service">服务</string>
@@ -439,7 +453,7 @@
     <string name="diagnostics_full">完全</string>
     <string name="diagnostics_limited">受限</string>
     <string name="diagnostics_unknown">未知</string>
-    <string name="error_protect_title">ErrorProtect</string>
+    <string name="error_protect_title">错误保护</string>
     <string name="error_protect_summary">每 10 秒检查进程健康状态与事务错误。若发现异常自动停止并重启 Shevery。</string>
     <string name="settings_tcp_5555_title">绑定 TCP 5555</string>
     <string name="settings_tcp_5555_summary">将本地 ADB 服务绑定至 5555 端口，无需无线调试端口变动即可保持连接。</string>
@@ -447,4 +461,29 @@
     <string name="settings_tcp_5555_bind_success">已成功将 ADB 服务绑定至 TCP 5555 端口</string>
     <string name="settings_tcp_5555_bind_failed">绑定 ADB 到 5555 端口失败：%1$s</string>
     <string name="settings_tcp_5555_bind_failed_generic">需要 Root、Dhizuku 或活跃的 Shevery 服务。</string>
+    <string name="accessibility_manager_title">无障碍管理器</string>
+    <string name="accessibility_manager_lab_group">无障碍</string>
+    <string name="accessibility_manager_lab_title">无障碍管理器</string>
+    <string name="accessibility_manager_lab_summary">管理并保持无障碍服务运行</string>
+    <string name="accessibility_manager_keep_alive_group">保活</string>
+    <string name="accessibility_manager_keep_alive_title">保持已固定的服务运行</string>
+    <string name="accessibility_manager_keep_alive_summary">在系统或用户禁用时重新启用已固定的无障碍服务</string>
+    <string name="accessibility_manager_auto_boot_title">开机自启</string>
+    <string name="accessibility_manager_auto_boot_summary">设备重启后自动启动保活守护进程</string>
+    <string name="accessibility_manager_shizuku_required">Shevery 未运行。请先启动 Shevery 以启用或禁用无障碍服务。</string>
+    <string name="accessibility_manager_services_group">无障碍服务（%1$d）</string>
+    <string name="accessibility_manager_services_empty">未找到已安装的无障碍服务。</string>
+    <string name="accessibility_manager_service_no_description">该服务未提供描述。</string>
+    <string name="accessibility_manager_write_failed">更新无障碍服务失败，请检查 Shevery 是否正在运行并拥有权限。</string>
+    <string name="accessibility_manager_pin">固定服务以保持运行</string>
+    <string name="accessibility_manager_unpin">取消固定服务</string>
+    <string name="accessibility_daemon_channel_name">无障碍服务保活</string>
+    <string name="accessibility_daemon_notification_title">无障碍服务保活已激活</string>
+    <string name="accessibility_daemon_notification_text">已固定的无障碍服务在被禁用时将被恢复</string>
+    <string name="settings_compat_stub">旧版 Shizuku 存根</string>
+    <string name="settings_compat_stub_summary">安装存根包 (moe.shizuku.privileged.api)，使硬编码检查旧版 Shizuku 管理器的应用正常工作。权限和 Binder 请求将转发至 Shevery。</string>
+    <string name="settings_compat_stub_installed">已通过 %1$s 安装旧版存根</string>
+    <string name="settings_compat_stub_uninstalled">旧版存根已移除</string>
+    <string name="settings_compat_stub_failed">通过 %2$s %1$s 旧版存根失败：%3$s</string>
+    <string name="settings_compat_stub_none">无可用通道（请先启动 Shevery）</string>
 </resources>
