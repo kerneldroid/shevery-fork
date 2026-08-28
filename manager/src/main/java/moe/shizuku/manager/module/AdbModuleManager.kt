@@ -111,7 +111,7 @@ object AdbModuleManager {
                         }
                     }
 
-                    markScriptsExecutable(staging)
+                    markScriptsExecutable(staging, props["action"])
                     target.deleteRecursively()
                     check(staging.renameTo(target)) { "Unable to move module into storage." }
                     readModule(target) ?: error("Installed module is unreadable.")
@@ -474,9 +474,14 @@ object AdbModuleManager {
         return binDir
     }
 
-    private fun markScriptsExecutable(directory: File) {
+    private fun markScriptsExecutable(directory: File, customAction: String?) {
+        val declared = customAction?.trim()?.trim('/')
         directory.walkTopDown()
-            .filter { it.isFile && it.extension == "sh" }
+            .filter { file ->
+                if (!file.isFile) return@filter false
+                if (file.extension == "sh") return@filter true
+                declared != null && file.toRelativeString(directory) == declared
+            }
             .forEach { it.setExecutable(true, false) }
     }
 

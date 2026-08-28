@@ -6,7 +6,9 @@ import moe.shizuku.manager.module.discovery.ContentItem
 import moe.shizuku.manager.module.discovery.RateLimitTracker
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -30,87 +32,98 @@ class SourceZipBuilder private constructor() {
         val cacheDir = File(context.cacheDir, "module_zips").apply { mkdirs() }
         val zipFile = File(cacheDir, "$moduleId-source.zip")
         val prefix = subPath?.trim('/')?.let { "$it/" } ?: ""
+        val packed = linkedSetOf<String>()
 
         return try {
             ZipOutputStream(zipFile.outputStream()).use { zip ->
                 for (file in files) {
-                    if (!isModuleFile(file.path)) continue
                     if (file.downloadUrl == null) continue
-
-                    val content = downloadFile(file.downloadUrl, githubPat) ?: continue
-                    val entryName = file.path.trimStart('/').let { fullPath ->
-                        if (prefix.isNotEmpty() && fullPath.startsWith(prefix)) fullPath.removePrefix(prefix) else fullPath.substringAfterLast('/')
-                    }
-                    val entry = ZipEntry(entryName)
-                    entry.size = content.size.toLong()
-                    zip.putNextEntry(entry)
+                    val entryName = relativeEntryName(file.path, prefix)
+                    require(packed.add(entryName)) { "Duplicate module file: $entryName" }
+                    val content = downloadFile(file.downloadUrl, githubPat)
+                    zip.putNextEntry(ZipEntry(entryName))
                     zip.write(content)
                     zip.closeEntry()
                 }
             }
 
-            if (zipFile.length() > 0) {
-                zipFile
-            } else {
+            if (packed.isEmpty()) {
                 zipFile.delete()
                 null
+            } else {
+                zipFile
             }
         } catch (e: Exception) {
             Log.e(TAG, "ZIP build failed for $moduleId", e)
             zipFile.delete()
-            null
+            throw e
         }
     }
 
-    private fun downloadFile(url: String, githubPat: String?): ByteArray? {
-        return try {
-            val builder = Request.Builder()
-                .url(url)
-                .header("Accept", "application/vnd.github.v3.raw")
+    private fun downloadFile(url: String, githubPat: String?): ByteArray {
+        val builder = Request.Builder()
+            .url(url)
+            .header("Accept", "application/vnd.github.v3.raw")
 
-            if (!githubPat.isNullOrBlank()) {
-                builder.header("Authorization", "Bearer $githubPat")
+        if (!githubPat.isNullOrBlank()) {
+            builder.header("Authorization", "Bearer $githubPat")
+        }
+
+        val request = builder.build()
+        val response = client.newCall(request).execute()
+
+        response.use { resp ->
+            rateLimit.update(resp.headers)
+
+            val body = resp.body ?: throw IOException("Empty response for $url")
+            if (!resp.isSuccessful) {
+                throw IOException("Download failed: HTTP ${resp.code} for $url")
             }
 
-            val request = builder.build()
-            val response = client.newCall(request).execute()
+            val length = body.contentLength()
+            if (length > MAX_FILE_BYTES) {
+                throw IOException("File exceeds size limit: $url")
+            }
 
-            response.use { resp ->
-                rateLimit.update(resp.headers)
-
-                if (!resp.isSuccessful) {
-                    Log.w(TAG, "Download failed: ${resp.code} for $url")
-                    return null
+            val output = ByteArrayOutputStream(if (length > 0) length.toInt() else 8192)
+            body.byteStream().use { input ->
+                val buffer = ByteArray(8192)
+                var total = 0L
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    total += read
+                    if (total > MAX_FILE_BYTES) {
+                        throw IOException("File exceeds size limit: $url")
+                    }
+                    output.write(buffer, 0, read)
                 }
-
-                resp.body?.bytes()
             }
-        } catch (e: Exception) {
-            Log.w(TAG, "Download error for $url", e)
-            null
+            return output.toByteArray()
         }
     }
 
-    private fun isModuleFile(name: String): Boolean {
-        val cleanName = name.trimStart('/').lowercase()
-        val fileName = cleanName.substringAfterLast('/')
-        return fileName == "module.prop" ||
-                fileName.endsWith(".sh") ||
-                fileName.startsWith("banner.") ||
-                cleanName.contains("webui/") ||
-                cleanName.contains("webroot/") ||
-                cleanName.contains("web/") ||
-                WEB_EXTENSIONS.any { ext -> fileName.endsWith(ext) }
+    private fun relativeEntryName(path: String, prefix: String): String {
+        val clean = path.trimStart('/').replace('\\', '/')
+        require(clean.isNotBlank()) { "Invalid module file path." }
+        require(!clean.startsWith("/") && !clean.contains("../") && clean != "..") {
+            "Unsafe module file path: $path"
+        }
+        val relative = if (prefix.isNotEmpty()) {
+            require(clean.startsWith(prefix)) { "Module file outside module directory: $clean" }
+            clean.removePrefix(prefix)
+        } else {
+            clean
+        }
+        require(relative.isNotBlank()) { "Invalid module file path: $path" }
+        return relative
     }
 
     fun getRateLimit(): RateLimitTracker = rateLimit
 
     companion object {
         private const val TAG = "SourceZipBuilder"
-        private val WEB_EXTENSIONS = setOf(
-            ".js", ".css", ".json", ".png", ".svg", ".webp",
-            ".woff", ".woff2", ".ttf", ".html", ".htm"
-        )
+        private const val MAX_FILE_BYTES = 200L * 1024L * 1024L
 
         @Volatile
         private var instance: SourceZipBuilder? = null

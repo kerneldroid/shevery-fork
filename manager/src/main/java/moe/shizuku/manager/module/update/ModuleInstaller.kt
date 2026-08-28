@@ -15,6 +15,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import moe.shizuku.manager.module.catalog.TokenStore
 import java.io.File
+import java.io.IOException
+import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 class ModuleInstaller private constructor() {
@@ -86,8 +88,8 @@ class ModuleInstaller private constructor() {
             }
         }
 
-        val path = subPath?.trim('/')?.let { "/$it" } ?: ""
-        val url = "https://api.github.com/repos/$owner/$repo/contents$path?ref=$defaultBranch"
+        val rootPath = subPath?.trim('/')?.takeIf { it.isNotEmpty() } ?: ""
+        val url = contentsUrl(owner, repo, rootPath, defaultBranch)
 
         val request = buildRequest(url, githubPat)
         val response = client.newCall(request).execute()
@@ -105,35 +107,37 @@ class ModuleInstaller private constructor() {
 
             val allFiles = mutableListOf<ContentItem>()
             val dirsToFetch = ArrayDeque<String>()
+            val visitedDirs = mutableSetOf(rootPath)
 
             for (item in items) {
                 if (item.type == "file") {
                     allFiles.add(item)
                 } else if (item.type == "dir") {
-                    dirsToFetch.add(item.name)
+                    dirsToFetch.add(item.path)
                 }
             }
 
             while (dirsToFetch.isNotEmpty()) {
-                val dirName = dirsToFetch.removeFirst()
-                val parentPath = path.trim('/').let { if (it.isNotEmpty()) "$it/$dirName" else dirName }
-                val dirUrl = "https://api.github.com/repos/$owner/$repo/contents/$parentPath?ref=$defaultBranch"
+                val dirPath = dirsToFetch.removeFirst()
+                if (!visitedDirs.add(dirPath)) continue
+
+                val dirUrl = contentsUrl(owner, repo, dirPath, defaultBranch)
                 val dirRequest = buildRequest(dirUrl, githubPat)
                 val dirResponse = client.newCall(dirRequest).execute()
 
                 dirResponse.use { dirResp ->
                     rateLimit.update(dirResp.headers)
                     if (!dirResp.isSuccessful) {
-                        Log.w(TAG, "Contents API failed for subdir: ${dirResp.code} for $dirUrl")
-                        return@use
+                        throw IOException("Failed to list module directory $dirPath: HTTP ${dirResp.code}")
                     }
-                    val dirBody = dirResp.body?.string() ?: return@use
+                    val dirBody = dirResp.body?.string()
+                        ?: throw IOException("Empty response for module directory $dirPath")
                     val dirItems = json.decodeFromString<List<ContentItem>>(dirBody)
                     for (dirItem in dirItems) {
                         if (dirItem.type == "file") {
                             allFiles.add(dirItem)
                         } else if (dirItem.type == "dir") {
-                            dirsToFetch.add(dirItem.name)
+                            dirsToFetch.add(dirItem.path)
                         }
                     }
                 }
@@ -144,11 +148,22 @@ class ModuleInstaller private constructor() {
                 return null
             }
 
-        val zipFile = sourceZipBuilder.buildZip(context, moduleId, allFiles, githubPat, subPath)
-            ?: return null
+            val zipFile = sourceZipBuilder.buildZip(context, moduleId, allFiles, githubPat, subPath)
+                ?: return null
 
             return Uri.fromFile(zipFile)
         }
+    }
+
+    private fun contentsUrl(owner: String, repo: String, path: String, ref: String): String {
+        val encodedPath = path.trim('/').split('/')
+            .filter { it.isNotEmpty() }
+            .joinToString("/") { segment ->
+                URLEncoder.encode(segment, "UTF-8").replace("+", "%20")
+            }
+        val base = "https://api.github.com/repos/$owner/$repo/contents" +
+                (if (encodedPath.isEmpty()) "" else "/$encodedPath")
+        return "$base?ref=${URLEncoder.encode(ref, "UTF-8")}"
     }
 
     private suspend fun downloadRelease(
