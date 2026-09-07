@@ -56,7 +56,7 @@ Esto puede deberse a que el almacén de claves (KeyStore) de este dispositivo es
     <string name="adb_pairing_tutorial_content_steps"><![CDATA[Vaya a "Opciones de desarrollador" - "Depuración inalámbrica". Toque "Emparejar dispositivo con código de emparejamiento", verá un código de seis dígitos.]]></string>
     <string name="adb_pairing_tutorial_content_enter_pairing_code"><![CDATA[Introduzca el código en la notificación para completar el emparejamiento.]]></string>
     <string name="adb_pairing_tutorial_content_notification_blocked"><![CDATA[El emparejamiento requiere interactuar con una notificación de Shevery. Por favor permita que Shevery envíe notificaciones.]]></string>
-        <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[De lo contrario, no podrá introducir el código de emparejamiento desde la notificación.]]></string>
+    <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[De lo contrario, no podrá introducir el código de emparejamiento desde la notificación.]]></string>
     <string name="adb_pairing_tutorial_content_left_is_clickable"><![CDATA[Tenga en cuenta que la parte izquierda de "Depuración inalámbrica" es pulsable y abre una nueva página. Activar solo el interruptor de la derecha no es suficiente.]]></string>
     <string name="adb_pairing_tutorial_content_finish"><![CDATA[Vuelva a Shevery e inicie el servicio.]]></string>
     <string name="adb_pairing_tutorial_content_network"><![CDATA[Shevery necesita acceder a la red local. Esto se controla mediante el permiso de red.]]></string>
@@ -399,7 +399,7 @@ Listo para comandos.]]></string>
     <string name="comput_record_macro"><![CDATA[Grabar macro]]></string>
     <string name="comput_recording_active"><![CDATA[Grabación activa. Ejecute comandos desde la entrada principal para agregarlos a esta macro.]]></string>
     <string name="comput_saved_macros"><![CDATA[Macros guardadas]]></string>
-        <string name="comput_delete"><![CDATA[Eliminar]]></string>
+    <string name="comput_delete"><![CDATA[Eliminar]]></string>
     <string name="comput_recommand_confirmation_title"><![CDATA[Confirmación ReCommand]]></string>
     <string name="comput_execute"><![CDATA[Ejecutar]]></string>
     <string name="comput_cancel"><![CDATA[Cancelar]]></string>
@@ -432,16 +432,16 @@ Listo para comandos.]]></string>
     <string name="settings_tcp_5555_bind_success"><![CDATA[Servidor ADB vinculado con éxito al puerto TCP 5555]]></string>
     <string name="settings_tcp_5555_bind_failed"><![CDATA[Fallo al vincular ADB al puerto 5555: %1$s]]></string>
     <string name="settings_tcp_5555_bind_failed_generic"><![CDATA[Se requiere Root, Dhizuku o un servicio Shevery activo.]]></string>
-    <string name="shevery_update_auto_check"><![CDATA[]]></string>
-    <string name="shevery_update_auto_check_summary"><![CDATA[]]></string>
-    <string name="home_update_available_title"><![CDATA[]]></string>
-    <string name="home_update_available_body"><![CDATA[]]></string>
-    <string name="app_name"><![CDATA[Shevery 2. home_adb_dialog_view_command_notice: Es gibt noch einige weitere Überlegungen, bitte bestätige, dass du die Hilfe gelesen hast. 3. home_quick_terminal: Terminal 4. home_quick_wireless: Wireless ADB 5. home_quick_tcp: TCP 5555 6. home_manage_apps_button: Apps verwalten 7. app_management_loading: Apps laden… 8. settings_start_on_boot_adb: Starten bei Boot über Wireless Debugging 9. settings_start_on_boot_adb_summary: Beim Booten wird kurz die Wireless Debugging aktiviert und Shevery über ADB gestartet (TCP-Port 5555). Kein Root erforderlich, Wi-Fi ist nur für einen Moment erforderlich. 10. settings_start_on_boot_adb_summary_no_tcp: Beim Booten wird kurz die Wireless Debugging aktiviert und Shevery über ADB gestartet. Kein Root erforderlich, Wi-Fi ist nur für einen Moment erforderlich. 11. settings_start_on_boot_adb_granted: WRITE_SECURE_SETTINGS erteilt. 12. settings_start_on_boot_adb_warning_no_tcp: TCP-Bindung (Port 5555) ist deaktiviert: die Wireless Debugging bleibt aktiv. 13. settings_start_on_boot_adb_missing_permission_title: Fehlende Berechtigung 14. settings_start_on_boot_adb_not_running: Shevery wird nicht ausgeführt. Starten Sie den Dienst zuerst, dann kommen Sie zurück und aktivieren Sie diese Einstellung. 15. settings_start_on_boot_adb_grant_failed: Die automatische Berechtigungserteilung ist fehlgeschlagen. Führen Sie diesen Befehl von einem Computer aus, um sie manuell zu erteilen:]]></string>
-    <string name="shevery_update_check_title"><![CDATA[Kontrollieren Sie, ob es neue Versionen des Shevery-Managers gibt]]></string>
-    <string name="comput_hero_title"><![CDATA[Shevery Console 2. comput_hero_subtitle: Leistungsstarker Shell-Terminal auf Ihrem Gerät, powered by Shizuku. 3. comput_status_ready: Bereit 4. comput_status_running: Läuft 5. comput_status_error: Fehler 6. comput_console_section: Konsole 7. comput_tab_terminal: Terminal 8. comput_tab_commandium: AI-Studio 9. comput_tab_macros: Makros 10. comput_tab_presets: Vorlagen 11. comput_quick_chips: Schnellaktionen 12. comput_terminal_header: SHELL-AUSGABE 13. comput_presets_title: Vorlagenbibliothek 14. comput_presets_subtitle: Tippen Sie auf eine beliebige Befehle, um sie schnell auszuführen oder in die Terminalprompt automatisch einzufügen. 15. comput_output_label: Ausgabe]]></string>
-    <string name="comput_search_desc"><![CDATA[Suchergebnisse]]></string>
-    <string name="accessibility_manager_lab_summary"><![CDATA[Verwalten und aufrechterhalten von Accessibility-Diensten]]></string>
-    <string name="accessibility_daemon_notification_text"><![CDATA[Eingebundene Accessibility-Dienste werden wiederhergestellt, wenn sie deaktiviert werden. 2. settings_compat_stub: Legacy-Shizuku-Stub 3. settings_compat_stub_summary: Installiert einen Stub-Paket (moe.shizuku.privileged.api), damit Anwendungen, die nach dem Legacy-Shizuku-Manager suchen, weiterhin funktionieren. Berechtigungs- und Binder-Anfragen werden an Shevery weitergeleitet. 4. settings_compat_stub_installed: Legacy-Stub wurde über %1$s installiert. 5. settings_compat_stub_uninstalled: Legacy-Stub wurde entfernt. 6. settings_compat_stub_failed: Das Legacy-Stub konnte nicht über %2$s %1$s: %3$s]]></string>
+    <string name="shevery_update_auto_check"><![CDATA[Comprobación automática de actualizaciones]]></string>
+    <string name="shevery_update_auto_check_summary"><![CDATA[Buscar actualizaciones de la aplicación en segundo plano]]></string>
+    <string name="home_update_available_title"><![CDATA[Actualización disponible: %s]]></string>
+    <string name="home_update_available_body"><![CDATA[Hay una nueva versión de Shevery disponible. Toque para ver.]]></string>
+    <string name="app_name"><![CDATA[Shevery]]></string>
+    <string name="shevery_update_check_title"><![CDATA[Comprobar actualizaciones de Shevery Manager]]></string>
+    <string name="comput_hero_title"><![CDATA[Consola Shevery]]></string>
+    <string name="comput_search_desc"><![CDATA[Buscar en la salida]]></string>
+    <string name="accessibility_manager_lab_summary"><![CDATA[Gestionar y mantener activos los servicios de accesibilidad]]></string>
+    <string name="accessibility_daemon_notification_text"><![CDATA[Los servicios de accesibilidad fijados se restaurarán si se desactivan.]]></string>
     <string name="home_adb_dialog_view_command_notice"><![CDATA[Hay algunas otras cuestiones que debes tener en cuenta; por favor, confirma que has leído primero la ayuda.]]></string>
     <string name="home_quick_terminal"><![CDATA[Terminal]]></string>
     <string name="home_quick_wireless"><![CDATA[ADB inalámbrico]]></string>
@@ -553,16 +553,9 @@ Listo para comandos.]]></string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[Se necesita conexión Wi-Fi para el primer reinicio, ya que Shevery debe conectarse al puerto de depuración inalámbrico actual antes de cambiar el ADB al 5555.]]></string>
     <string name="adb_pairing_tutorial_content_miui">Es posible que los usuarios de MIUI necesiten cambiar el estilo de notificación a "Android" desde "Notificación" - "Tono de notificación" en la configuración del sistema.</string>
     <string name="comput_no_macros">Aún no hay macros guardadas. Haga clic en \'Grabar macro\' para comenzar a grabar los comandos de la consola.</string>
-
-    <!-- TCP Mode Enable Prompt Dialog -->
-    
-    
-    
-    
-    
-<string name="tcp_prompt_dialog_title"><![CDATA[¿Habilitar el modo TCP persistente?]]></string>
-    <string name="tcp_prompt_dialog_message"><![CDATA[Shevery está corriendo, pero el modo TCP persistente está actualmente deshabilitado.\\n\\nHabilitar el modo TCP permitirá que Shevery siga ejecutándose y se reconecte automáticamenteen segundo plano, incluso sin Wi-Fi, hasta que se reinicie su dispositivo.]]></string>
+    <string name="tcp_prompt_dialog_title"><![CDATA[¿Habilitar el modo TCP persistente?]]></string>
+    <string name="tcp_prompt_dialog_message"><![CDATA[Shevery está ejecutándose, pero el modo TCP persistente está actualmente desactivado.\n\nActivar el modo TCP permitirá que Shevery siga ejecutándose y se reconecte automáticamente en segundo plano, incluso sin Wi-Fi, hasta que se reinicie su dispositivo.]]></string>
     <string name="tcp_prompt_dialog_enable"><![CDATA[Habilitar]]></string>
     <string name="tcp_prompt_dialog_later"><![CDATA[Ahora no]]></string>
-    <string name="tcp_prompt_dialog_do_not_remind"><![CDATA[No me lo recuerde de nuevo]]></string>
+    <string name="tcp_prompt_dialog_do_not_remind"><![CDATA[No volver a recordar]]></string>
 </resources>
