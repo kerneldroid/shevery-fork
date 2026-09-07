@@ -9,26 +9,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -38,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -49,7 +41,6 @@ import moe.shizuku.manager.ui.compose.GroupDivider
 import moe.shizuku.manager.ui.compose.SettingsGroup
 import moe.shizuku.manager.ui.compose.SettingsRow
 import moe.shizuku.manager.ui.compose.ShizukuExpressiveTheme
-import moe.shizuku.manager.ui.compose.ShizukuIcon
 import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
 import moe.shizuku.manager.ui.compose.SwitchSettingsRow
 
@@ -58,6 +49,8 @@ fun UpdateSettingsScreen(
     onNavigateUp: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // Module Update state
     var catalogEnabled by remember { mutableStateOf(ModuleSettings.isCatalogEnabled()) }
     var updateFrequency by remember { mutableStateOf(ModuleSettings.getUpdateFrequency()) }
     var installMode by remember { mutableStateOf(ModuleSettings.getInstallMode()) }
@@ -69,8 +62,9 @@ fun UpdateSettingsScreen(
             title = stringResource(R.string.update_settings_title),
             onNavigateUp = onNavigateUp
         ) {
+            // Group: Module Catalog & Updates
             item {
-                SettingsGroup(title = stringResource(R.string.update_settings_catalog)) {
+                SettingsGroup(title = stringResource(R.string.shevery_update_modules_group_title)) {
                     SwitchSettingsRow(
                         icon = R.drawable.ic_outline_notifications_active_24,
                         title = stringResource(R.string.update_settings_catalog_enabled),
@@ -81,15 +75,7 @@ fun UpdateSettingsScreen(
                             ModuleSettings.setCatalogEnabled(it)
                         }
                     )
-                }
-            }
-
-            item {
-                Spacer(Modifier.height(8.dp))
-            }
-
-            item {
-                SettingsGroup(title = stringResource(R.string.update_settings_frequency)) {
+                    GroupDivider()
                     UpdateFrequencyDropdown(
                         selected = updateFrequency,
                         onSelect = {
@@ -97,15 +83,7 @@ fun UpdateSettingsScreen(
                             ModuleSettings.setUpdateFrequency(it)
                         }
                     )
-                }
-            }
-
-            item {
-                Spacer(Modifier.height(8.dp))
-            }
-
-            item {
-                SettingsGroup(title = stringResource(R.string.update_settings_install_mode)) {
+                    GroupDivider()
                     InstallModeDropdown(
                         selected = installMode,
                         onSelect = {
@@ -113,15 +91,7 @@ fun UpdateSettingsScreen(
                             ModuleSettings.setInstallMode(it)
                         }
                     )
-                }
-            }
-
-            item {
-                Spacer(Modifier.height(8.dp))
-            }
-
-            item {
-                SettingsGroup(title = stringResource(R.string.update_settings_github)) {
+                    GroupDivider()
                     SettingsRow(
                         icon = R.drawable.ic_baseline_link_24,
                         title = stringResource(R.string.update_settings_github_pat),
@@ -133,6 +103,7 @@ fun UpdateSettingsScreen(
                         onClick = { showPatDialog = true }
                     )
                     if (githubPat.isNotBlank()) {
+                        GroupDivider()
                         SettingsRow(
                             icon = R.drawable.ic_close_24,
                             title = stringResource(R.string.update_settings_github_pat_delete),
@@ -177,6 +148,7 @@ private fun UpdateFrequencyDropdown(
         onExpandedChange = { expanded = !expanded }
     ) {
         SettingsRow(
+            modifier = Modifier.menuAnchor(),
             icon = R.drawable.ic_outline_notifications_active_24,
             title = stringResource(R.string.update_settings_frequency_label),
             summary = stringResource(when (selected) {
@@ -231,6 +203,7 @@ private fun InstallModeDropdown(
         onExpandedChange = { expanded = !expanded }
     ) {
         SettingsRow(
+            modifier = Modifier.menuAnchor(),
             icon = R.drawable.ic_outline_arrow_upward_24,
             title = stringResource(R.string.update_settings_install_mode_label),
             summary = stringResource(when (selected) {
@@ -335,3 +308,5 @@ private fun PatInputDialog(
         }
     )
 }
+
+

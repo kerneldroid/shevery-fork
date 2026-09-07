@@ -54,7 +54,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.LoadingIndicator
@@ -88,6 +87,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import moe.shizuku.manager.R
+import moe.shizuku.manager.module.catalog.TokenStore
+import moe.shizuku.manager.module.discovery.ModuleDiscoveryManager
+import moe.shizuku.manager.module.update.ModuleInstaller
 import moe.shizuku.manager.module.update.UpdateChecker
 import moe.shizuku.manager.ui.compose.ExpressiveSwitch
 import moe.shizuku.manager.ui.compose.MonospaceLog
@@ -153,16 +155,22 @@ fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
             checkingUpdates = true
             Toast.makeText(context, context.getString(R.string.modules_checking_updates), Toast.LENGTH_SHORT).show()
             val checker = UpdateChecker.getInstance()
+            val discoveryManager = ModuleDiscoveryManager.getInstance(context)
+            val catalogModules = runCatching { discoveryManager.getModules(forceRefresh = false) }.getOrDefault(emptyList())
+            val githubPat = TokenStore.getToken(context)
             var foundUpdates = 0
             val updated = modules.map { m ->
-                val result = checker.checkUpdate(m)
-                val info = if (result.hasUpdate && result.downloadUrl != null && result.latestVersion != null) {
+                val result = checker.checkUpdate(m, catalogModules, githubPat)
+                val info = if (result.hasUpdate && result.latestVersion != null) {
                     foundUpdates++
                     ModuleUpdateInfo(
                         newVersion = result.latestVersion,
                         newVersionCode = result.latestVersionCode,
-                        zipUrl = result.downloadUrl,
-                        changelog = result.changelog
+                        zipUrl = result.downloadUrl ?: "",
+                        changelog = result.changelog,
+                        repoOwner = result.repoOwner,
+                        repoName = result.repoName,
+                        subPath = result.subPath
                     )
                 } else null
                 m.copy(updateInfo = info)
@@ -183,9 +191,23 @@ fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
         scope.launch {
             updatingModuleId = module.id
             Toast.makeText(context, context.getString(R.string.modules_updating), Toast.LENGTH_SHORT).show()
-            runCatching {
-                downloadAndInstallFromUrl(context, info.zipUrl, "${module.id}-update-${info.newVersion}.zip")
-            }.onSuccess {
+            val result = if (!info.repoOwner.isNullOrBlank() && !info.repoName.isNullOrBlank()) {
+                ModuleInstaller.getInstance().installModule(
+                    context,
+                    module.id,
+                    info.repoOwner,
+                    info.repoName,
+                    info.subPath
+                )
+            } else if (info.zipUrl.startsWith("http://") || info.zipUrl.startsWith("https://")) {
+                runCatching {
+                    downloadAndInstallFromUrl(context, info.zipUrl, "${module.id}-update-${info.newVersion}.zip")
+                }
+            } else {
+                Result.failure(Exception("No valid update source"))
+            }
+
+            result.onSuccess {
                 Toast.makeText(
                     context,
                     context.getString(R.string.modules_update_success, info.newVersion),
@@ -379,7 +401,7 @@ fun ModulesScreen(onOpenWebUi: (String) -> Unit) {
                                 .padding(16.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator()
+                            LoadingIndicator(modifier = Modifier.size(32.dp))
                         }
                     } else if (aiExplanation != null) {
                         Text(
@@ -601,7 +623,7 @@ private fun ModuleCard(
                                 modifier = Modifier.height(32.dp)
                             ) {
                                 if (updating) {
-                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 2.dp)
+                                    LoadingIndicator(modifier = Modifier.size(16.dp))
                                 } else {
                                     Text(stringResource(R.string.modules_update_button))
                                 }

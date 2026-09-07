@@ -440,4 +440,95 @@ object ModuleSettings {
     fun setCatalogEnabled(enabled: Boolean) {
         ShizukuSettings.getPreferences().edit().putBoolean(KEY_CATALOG_ENABLED, enabled).apply()
     }
+
+    // Shevery App Update Settings
+    private const val KEY_APP_UPDATE_CHANNEL = "app_update_channel"
+    private const val KEY_APP_UPDATE_AUTO_CHECK = "app_update_auto_check"
+    private const val KEY_APP_UPDATE_FREQUENCY = "app_update_frequency"
+    private const val KEY_APP_LAST_CHECK_TIME = "app_last_check_time"
+
+    enum class AppUpdateChannel(
+        val value: String,
+        @param:StringRes val labelRes: Int
+    ) {
+        STABLE("stable", R.string.app_update_channel_stable),
+        BETA_PRE_RELEASE("beta", R.string.app_update_channel_beta);
+
+        companion object {
+            fun fromValue(value: String?): AppUpdateChannel {
+                return entries.firstOrNull { it.value == value } ?: STABLE
+            }
+        }
+    }
+
+    fun getAppUpdateChannel(): AppUpdateChannel {
+        return AppUpdateChannel.fromValue(
+            ShizukuSettings.getPreferences().getString(KEY_APP_UPDATE_CHANNEL, AppUpdateChannel.STABLE.value)
+        )
+    }
+
+    fun setAppUpdateChannel(channel: AppUpdateChannel) {
+        ShizukuSettings.getPreferences().edit().putString(KEY_APP_UPDATE_CHANNEL, channel.value).apply()
+    }
+
+    fun isAppUpdateAutoCheckEnabled(): Boolean {
+        return ShizukuSettings.getPreferences().getBoolean(KEY_APP_UPDATE_AUTO_CHECK, true)
+    }
+
+    fun setAppUpdateAutoCheckEnabled(enabled: Boolean) {
+        ShizukuSettings.getPreferences().edit().putBoolean(KEY_APP_UPDATE_AUTO_CHECK, enabled).apply()
+    }
+
+    fun getAppUpdateFrequency(): UpdateFrequency {
+        return UpdateFrequency.fromValue(
+            ShizukuSettings.getPreferences().getString(KEY_APP_UPDATE_FREQUENCY, UpdateFrequency.DAILY.value)
+        )
+    }
+
+    fun setAppUpdateFrequency(freq: UpdateFrequency) {
+        ShizukuSettings.getPreferences().edit().putString(KEY_APP_UPDATE_FREQUENCY, freq.value).apply()
+    }
+
+    fun getAppLastCheckTime(): Long {
+        return ShizukuSettings.getPreferences().getLong(KEY_APP_LAST_CHECK_TIME, 0L)
+    }
+
+    fun setAppLastCheckTime(time: Long) {
+        ShizukuSettings.getPreferences().edit().putLong(KEY_APP_LAST_CHECK_TIME, time).apply()
+    }
+
+    // Persisted pending update (survives process death)
+    private const val KEY_APP_PENDING_UPDATE_VERSION = "app_pending_update_version"
+    private const val KEY_APP_PENDING_UPDATE_URL = "app_pending_update_url"
+    private const val KEY_APP_PENDING_UPDATE_DETECTED_AT = "app_pending_update_detected_at"
+
+    fun setPendingUpdate(version: String, url: String, detectedAt: Long) {
+        ShizukuSettings.getPreferences().edit()
+            .putString(KEY_APP_PENDING_UPDATE_VERSION, version)
+            .putString(KEY_APP_PENDING_UPDATE_URL, url)
+            .putLong(KEY_APP_PENDING_UPDATE_DETECTED_AT, detectedAt)
+            .apply()
+    }
+
+    fun getPendingUpdateVersion(): String? {
+        return ShizukuSettings.getPreferences().getString(KEY_APP_PENDING_UPDATE_VERSION, null)
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    fun getPendingUpdateUrl(): String? {
+        return ShizukuSettings.getPreferences().getString(KEY_APP_PENDING_UPDATE_URL, null)
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    fun getPendingUpdateDetectedAt(): Long {
+        return ShizukuSettings.getPreferences().getLong(KEY_APP_PENDING_UPDATE_DETECTED_AT, 0L)
+    }
+
+    fun clearPendingUpdate() {
+        ShizukuSettings.getPreferences().edit()
+            .remove(KEY_APP_PENDING_UPDATE_VERSION)
+            .remove(KEY_APP_PENDING_UPDATE_URL)
+            .remove(KEY_APP_PENDING_UPDATE_DETECTED_AT)
+            .apply()
+    }
 }

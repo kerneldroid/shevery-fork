@@ -26,6 +26,8 @@ public class ShizukuSettings {
     public static final String LANGUAGE = "language";
     public static final String KEEP_START_ON_BOOT = "start_on_boot";
     public static final String TCP_MODE = "tcp_mode";
+    public static final String SUPPRESS_TCP_MODE_PROMPT = "suppress_tcp_mode_prompt";
+    public static final String LAST_ADB_PORT = "last_adb_port";
     public static final String AUTO_DISABLE_USB_DEBUGGING = "auto_disable_usb_debugging";
     public static final String START_ON_BOOT_ADB = "start_on_boot_adb";
 
@@ -140,6 +142,22 @@ public class ShizukuSettings {
 
     public static void setStartOnBoot(boolean enabled) {
         getPreferences().edit().putBoolean(KEEP_START_ON_BOOT, enabled).apply();
+    }
+
+    public static boolean isTcpModePromptSuppressed() {
+        return getPreferences().getBoolean(SUPPRESS_TCP_MODE_PROMPT, false);
+    }
+
+    public static void setTcpModePromptSuppressed(boolean suppressed) {
+        getPreferences().edit().putBoolean(SUPPRESS_TCP_MODE_PROMPT, suppressed).apply();
+    }
+
+    public static int getLastAdbPort() {
+        return getPreferences().getInt(LAST_ADB_PORT, -1);
+    }
+
+    public static void setLastAdbPort(int port) {
+        getPreferences().edit().putInt(LAST_ADB_PORT, port).apply();
     }
 
 }

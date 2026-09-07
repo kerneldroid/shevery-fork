@@ -8,18 +8,37 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import moe.shizuku.manager.BuildConfig
 import moe.shizuku.manager.Manifest
 import moe.shizuku.manager.model.ServiceStatus
 import moe.shizuku.manager.utils.Logger.LOGGER
+import moe.shizuku.manager.utils.ShizukuStateMachine
 import moe.shizuku.manager.utils.ShizukuSystemApis
 import rikka.lifecycle.Resource
 import rikka.shizuku.Shizuku
 
 class HomeViewModel : ViewModel() {
 
+    val serverState: StateFlow<ShizukuStateMachine.State> = ShizukuStateMachine.asFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly,
+            initialValue = ShizukuStateMachine.get()
+        )
+
     private val _serviceStatus = MutableLiveData<Resource<ServiceStatus>>()
     val serviceStatus = _serviceStatus as LiveData<Resource<ServiceStatus>>
+
+    init {
+        viewModelScope.launch {
+            ShizukuStateMachine.asFlow().collect {
+                reload()
+            }
+        }
+    }
 
     private fun load(): ServiceStatus {
         if (!Shizuku.pingBinder()) {

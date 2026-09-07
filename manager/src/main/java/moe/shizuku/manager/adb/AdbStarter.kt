@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.starter.Starter
+import moe.shizuku.manager.utils.EnvironmentUtils
 import java.io.EOFException
 import java.net.SocketException
 
@@ -22,12 +23,14 @@ object AdbStarter {
         listener: ((ByteArray) -> Unit)? = null,
         log: ((String) -> Unit)? = null,
     ) {
+        moe.shizuku.manager.service.WatchdogManager.expectingDeath = true
         val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
         val tcpMode = ShizukuSettings.isTcpMode()
         val targetPort = if (tcpMode) TCP_MODE_PORT else port
 
         try {
-            if (tcpMode && port != targetPort) {
+            val isTargetAlreadyLive = EnvironmentUtils.isAdbPortLive(targetPort)
+            if (tcpMode && port != targetPort && !isTargetAlreadyLive) {
                 log?.invoke("Switching ADB from port $port to TCP port $targetPort...")
                 switchToTcp(host, port, targetPort, key)
             }
@@ -35,10 +38,16 @@ object AdbStarter {
             log?.invoke("Connecting to ADB on port $targetPort...")
             connectWithRetry(host, targetPort, key) { client ->
                 ShizukuSettings.setLastLaunchMode(ShizukuSettings.LaunchMethod.ADB)
+                ShizukuSettings.setLastAdbPort(targetPort)
                 client.shellCommand(Starter.internalCommand, listener)
             }
         } finally {
-            if (tcpMode) disableWirelessDebugging(context)
+            // Only touch wireless debugging when this starter put the device
+            // in TCP mode; unconditional disable would kill USB-started
+            // sessions and override the user's system setting.
+            if (tcpMode) {
+                disableWirelessDebugging(context)
+            }
         }
     }
 
@@ -47,6 +56,7 @@ object AdbStarter {
         currentPort: Int,
         targetPort: Int = TCP_MODE_PORT,
     ) {
+        moe.shizuku.manager.service.WatchdogManager.expectingDeath = true
         val key = AdbKey(PreferenceAdbKeyStore(ShizukuSettings.getPreferences()), "shizuku")
         switchToTcp(host, currentPort, targetPort, key)
     }

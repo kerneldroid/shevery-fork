@@ -34,6 +34,8 @@ object ShizukuReceiverStarter {
         AWAITING_WIFI,
         AWAITING_RETRY,
         RUNNING,
+        // STOPPED cancels any stale progress UI (see updateNotification();the
+        // terminal path re-posts the error after it on the same NOTIFICATION_ID.)
         STOPPED
     }
 
@@ -55,7 +57,20 @@ object ShizukuReceiverStarter {
                         // Cancel the startup notification (id 1005) since the worker
                         // notification (id 1447) is now the source of truth.
                         moe.shizuku.manager.service.StartupNotificationManager.dismiss(context)
-                        updateNotification(context, WorkerState.AWAITING_WIFI)
+                        // Post the banner that matches reality: AWAITING_WIFI only when Wi-Fi
+                        // is actually required-but-unavailable (previously this unconditionally
+                        // posted AWAITING_WIFI, so any re-invocation on Wi-Fi overwrote the
+                        // worker's RUNNING state with a stale "awaiting Wi-Fi" banner).
+                        // Parked while no unmetered network exists — same condition as
+                        // the worker's constraint (see AdbStartWorker.enqueueWithPolicy);
+                        // TCP mode does NOT mean the boot can run without Wi-Fi: wireless
+                        // ADB still needs the live local network to discover/connect.
+                        val state = if (!AdbStartWorker.isUnmeteredNetworkAvailable(context)) {
+                            WorkerState.AWAITING_WIFI
+                        } else {
+                            WorkerState.RUNNING
+                        }
+                        updateNotification(context, state)
                     } else {
                         showPermissionErrorNotification(context)
                     }
@@ -114,14 +129,20 @@ object ShizukuReceiverStarter {
     }
 
     fun updateNotification(context: Context, state: WorkerState) {
-        if (state == WorkerState.STOPPED) return
+        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        // STOPPED means "no notification" — explicitly cancel any stale one
+        // (previously returned without cancelling, leaving a stale "stopped"
+        // notification visible even after the service started successfully).
+        if (state == WorkerState.STOPPED) {
+            nm.cancel(NOTIFICATION_ID)
+            return
+        }
         val msgId = when (state) {
             WorkerState.AWAITING_WIFI -> R.string.wadb_notification_wifi_required
             WorkerState.AWAITING_RETRY -> R.string.wadb_notification_retry
             else -> null
         }
         val msg = if (msgId != null) context.getString(msgId) else null
-        val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIFICATION_ID, buildNotification(context, msg))
     }
 

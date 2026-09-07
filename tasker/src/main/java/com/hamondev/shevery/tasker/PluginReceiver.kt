@@ -6,6 +6,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import java.util.concurrent.atomic.AtomicBoolean
 import org.json.JSONObject
 import rikka.shizuku.Shizuku
 
@@ -55,19 +58,40 @@ class PluginReceiver : BroadcastReceiver() {
     }
 
     private fun restartServer(context: Context) {
-        sendControl(context, PluginContract.ACTION_STOP_SERVER)
+        if (!Shizuku.pingBinder()) {
+            sendControl(context, PluginContract.ACTION_START_SERVER)
+            return
+        }
+
         val pendingResult = goAsync()
-        Thread {
-            try {
-                val deadline = System.currentTimeMillis() + RESTART_WAIT_MS
-                while (System.currentTimeMillis() < deadline && Shizuku.pingBinder()) {
-                    Thread.sleep(RESTART_POLL_MS)
+        val appContext = context.applicationContext
+        val executed = AtomicBoolean(false)
+        val handler = Handler(Looper.getMainLooper())
+
+        lateinit var deadListener: Shizuku.OnBinderDeadListener
+
+        val finishRestart = Runnable {
+            if (executed.compareAndSet(false, true)) {
+                try {
+                    Shizuku.removeBinderDeadListener(deadListener)
+                } catch (_: Throwable) {}
+                handler.removeCallbacksAndMessages(null)
+                try {
+                    sendControl(appContext, PluginContract.ACTION_START_SERVER)
+                } finally {
+                    pendingResult.finish()
                 }
-                sendControl(context, PluginContract.ACTION_START_SERVER)
-            } finally {
-                pendingResult.finish()
             }
-        }.start()
+        }
+
+        deadListener = Shizuku.OnBinderDeadListener {
+            finishRestart.run()
+        }
+
+        Shizuku.addBinderDeadListener(deadListener)
+        sendControl(appContext, PluginContract.ACTION_STOP_SERVER)
+
+        handler.postDelayed(finishRestart, RESTART_WAIT_MS)
     }
 
     private fun sendControl(context: Context, action: String) {
@@ -93,6 +117,5 @@ class PluginReceiver : BroadcastReceiver() {
 
     companion object {
         private const val RESTART_WAIT_MS = 10_000L
-        private const val RESTART_POLL_MS = 250L
     }
 }

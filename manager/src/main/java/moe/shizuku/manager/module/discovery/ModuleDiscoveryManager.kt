@@ -128,9 +128,10 @@ class ModuleDiscoveryManager private constructor(context: Context) {
             if (!isOfficialOwner) {
                 if (skippedOwners.contains(owner)) continue
 
+                val ownerMax = maxModulesForOwner(owner)
                 val currentCount = moduleCountByOwner.getOrDefault(owner, 0)
-                if (currentCount >= MAX_MODULES_PER_USER) {
-                    Log.d(TAG, "Skipping $owner repos - user already has $currentCount modules (max $MAX_MODULES_PER_USER)")
+                if (currentCount >= ownerMax) {
+                    Log.d(TAG, "Skipping $owner repos - user already has $currentCount modules (max $ownerMax)")
                     skippedOwners.add(owner)
                     continue
                 }
@@ -145,9 +146,10 @@ class ModuleDiscoveryManager private constructor(context: Context) {
 
             for (module in found) {
                 if (!isOfficialOwner) {
+                    val ownerMax = maxModulesForOwner(owner)
                     val currentCount = moduleCountByOwner.getOrDefault(owner, 0)
-                    if (currentCount >= MAX_MODULES_PER_USER) {
-                        Log.d(TAG, "Skipping module ${module.moduleId} from $owner - limit reached ($currentCount/$MAX_MODULES_PER_USER)")
+                    if (currentCount >= ownerMax) {
+                        Log.d(TAG, "Skipping module ${module.moduleId} from $owner - limit reached ($currentCount/$ownerMax)")
                         continue
                     }
                     moduleCountByOwner[owner] = currentCount + 1
@@ -213,6 +215,21 @@ class ModuleDiscoveryManager private constructor(context: Context) {
         private const val PREFS_NAME = "module_discovery_cache"
         private const val MAX_MODULES_PER_USER = 4
         private const val OFFICIAL_OWNER = "HmnDev-Tech"
+
+        /**
+         * Owners granted an extended module limit in the catalog.
+         * Key = GitHub username (case-insensitive), Value = max allowed modules.
+         */
+        private val EXTENDED_LIMIT_OWNERS: Map<String, Int> = mapOf(
+            "kreza6173-pixel" to 8
+        )
+
+        fun maxModulesForOwner(owner: String): Int {
+            return EXTENDED_LIMIT_OWNERS.entries
+                .firstOrNull { it.key.equals(owner, ignoreCase = true) }
+                ?.value
+                ?: MAX_MODULES_PER_USER
+        }
 
         @Volatile
         private var instance: ModuleDiscoveryManager? = null

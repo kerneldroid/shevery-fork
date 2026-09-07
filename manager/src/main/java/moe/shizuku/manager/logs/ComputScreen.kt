@@ -97,6 +97,7 @@ import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -107,12 +108,14 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -154,8 +157,8 @@ private data class ComputLogLine(
 )
 
 private val ComputSpring = spring<Float>(
-    dampingRatio = 0.35f,
-    stiffness = Spring.StiffnessLow
+    dampingRatio = 0.4f,
+    stiffness = Spring.StiffnessMediumLow
 )
 
 @Composable
@@ -1463,7 +1466,7 @@ private fun ComputUtilityButton(
 ) {
     IconButton(
         onClick = onClick,
-        modifier = Modifier.size(42.dp),
+        modifier = Modifier.size(48.dp),
         colors = IconButtonDefaults.iconButtonColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -1484,37 +1487,48 @@ private fun ComputSearchBar(
     onClear: () -> Unit,
     onClose: () -> Unit
 ) {
-    OutlinedTextField(
+    TextField(
         value = query,
         onValueChange = onQueryChange,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(22.dp),
+        shape = CircleShape,
         singleLine = true,
         leadingIcon = {
             Icon(
                 imageVector = Icons.Rounded.Search,
                 contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(20.dp)
             )
         },
         trailingIcon = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
                 if (query.isNotEmpty()) {
-                    IconButton(onClick = onClear) {
+                    IconButton(
+                        onClick = onClear,
+                        modifier = Modifier.size(48.dp)
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.Clear,
                             contentDescription = stringResource(R.string.comput_clear_search_desc),
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }
-                IconButton(onClick = onClose) {
+                IconButton(
+                    onClick = onClose,
+                    modifier = Modifier.size(48.dp)
+                ) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = stringResource(R.string.comput_close_search_desc),
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -1522,7 +1536,9 @@ private fun ComputSearchBar(
         placeholder = { Text(stringResource(R.string.comput_search_hint)) },
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            focusedIndicatorColor = Color.Transparent,
+            unfocusedIndicatorColor = Color.Transparent
         )
     )
 }
@@ -1545,12 +1561,15 @@ private fun ComputOutputCard(
     val scope = rememberCoroutineScope()
     var userScrolledAway by remember { mutableStateOf(false) }
 
+    val bottomProximityPx = with(LocalDensity.current) { 48.dp.toPx() }
     val isNearBottom by remember(lines) {
         derivedStateOf {
             val info = listState.layoutInfo
-            val total = info.totalItemsCount
-            val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
-            total == 0 || lastVisible >= total - 2
+            val lastVisible = info.visibleItemsInfo.lastOrNull()
+                ?: return@derivedStateOf true
+            val trailingGap = info.viewportEndOffset - (lastVisible.offset + lastVisible.size)
+            lastVisible.index + 1 == info.totalItemsCount &&
+                trailingGap >= -bottomProximityPx
         }
     }
 
@@ -1560,12 +1579,15 @@ private fun ComputOutputCard(
         }
     }
 
-    LaunchedEffect(listState.isScrollInProgress, isNearBottom, isRunning) {
-        if (isRunning && listState.isScrollInProgress && !isNearBottom) {
-            userScrolledAway = true
-        } else if (isNearBottom) {
-            userScrolledAway = false
-        }
+    LaunchedEffect(isNearBottom, isRunning) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { scrolling ->
+                if (isRunning && scrolling && !isNearBottom) {
+                    userScrolledAway = true
+                } else if (isNearBottom) {
+                    userScrolledAway = false
+                }
+            }
     }
 
     LaunchedEffect(lines.size, isRunning, userScrolledAway) {
@@ -1800,18 +1822,15 @@ private fun highlightQuery(
     foreground: Color
 ): AnnotatedString {
     if (query.isBlank()) return AnnotatedString(text)
+    val matches = Regex(java.util.regex.Pattern.quote(query), RegexOption.IGNORE_CASE)
+        .findAll(text)
+        .toList()
+    if (matches.isEmpty()) return AnnotatedString(text)
     return buildAnnotatedString {
-        val lowerText = text.lowercase()
-        val lowerQuery = query.lowercase()
-        var index = 0
-        while (index < text.length) {
-            val match = lowerText.indexOf(lowerQuery, index)
-            if (match < 0) {
-                append(text.substring(index))
-                break
-            }
-            if (match > index) {
-                append(text.substring(index, match))
+        var cursor = 0
+        for (match in matches) {
+            if (match.range.first > cursor) {
+                append(text.substring(cursor, match.range.first))
             }
             withStyle(
                 style = SpanStyle(
@@ -1820,9 +1839,12 @@ private fun highlightQuery(
                     fontWeight = FontWeight.Bold
                 )
             ) {
-                append(text.substring(match, match + lowerQuery.length))
+                append(text.substring(match.range))
             }
-            index = match + lowerQuery.length
+            cursor = match.range.last + 1
+        }
+        if (cursor < text.length) {
+            append(text.substring(cursor))
         }
     }
 }

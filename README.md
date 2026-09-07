@@ -158,5 +158,9 @@ Follow this steps:
 - Add sources and Release with module.
 
 ## Attention!
-- Shevery r32 gonna be 25.08.26, because HmnDev-Tech got some problems with laptop.
-- You can test the beta of r32 by pre-release.
+
+**New builds** here: [actions](http://github.com/kerneldroid/shevery-fork/actions) / [releases](https://github.com/kerneldroid/shevery-fork/releases)
+
+**!!!** *Warning* **!!!**
+I see many shevery clones with renaming like "Shizako+". It's not Shizuku+ (not from thejaustin), it's just renaming of old shevery version. Don't download this for safety.
+

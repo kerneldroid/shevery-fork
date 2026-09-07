@@ -71,10 +71,25 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
 
     private static void waitSystemService(String name) {
+        if (ServiceManager.getService(name) != null) {
+            return;
+        }
+
+        try {
+            java.lang.reflect.Method waitForServiceMethod = ServiceManager.class.getMethod("waitForService", String.class);
+            LOGGER.i("waiting for service " + name + " via ServiceManager.waitForService...");
+            IBinder binder = (IBinder) waitForServiceMethod.invoke(null, name);
+            if (binder != null) {
+                return;
+            }
+        } catch (Throwable ignored) {
+            // Pre-Android 11 or hidden-api restricted, fall back to check loop
+        }
+
         while (ServiceManager.getService(name) == null) {
             try {
-                LOGGER.i("service " + name + " is not started, wait 1s.");
-                Thread.sleep(1000);
+                LOGGER.i("service " + name + " is not started, wait 200ms.");
+                Thread.sleep(200);
             } catch (InterruptedException e) {
                 LOGGER.w(e.getMessage(), e);
             }
@@ -503,6 +518,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         sendBinderToUserApp(binder, packageName, userId, true);
     }
 
+    private static final long[] NULL_PROVIDER_RETRY_BACKOFF_MS = {250L, 500L, 1000L, 1500L};
+
     static void sendBinderToUserApp(Binder binder, String packageName, int userId, boolean retry) {
         try {
             DeviceIdleControllerApis.addPowerSaveTempWhitelistApp(packageName, 30 * 1000, userId,
@@ -517,10 +534,19 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         IBinder token = null;
 
         try {
-            provider = ActivityManagerApis.getContentProviderExternal(name, userId, token, name);
-            if (provider == null) {
-                LOGGER.e("provider is null %s %d", name, userId);
-                return;
+            for (int attempt = 0; ; attempt++) {
+                provider = ActivityManagerApis.getContentProviderExternal(name, userId, token, name);
+                if (provider != null) {
+                    break;
+                }
+                if (attempt >= NULL_PROVIDER_RETRY_BACKOFF_MS.length) {
+                    LOGGER.e("provider is null %s %d (gave up after %d attempts)", name, userId, attempt + 1);
+                    return;
+                }
+                long backoff = NULL_PROVIDER_RETRY_BACKOFF_MS[attempt];
+                LOGGER.w("provider is null %s %d, retrying in %dms (attempt %d/%d)",
+                        name, userId, backoff, attempt + 1, NULL_PROVIDER_RETRY_BACKOFF_MS.length + 1);
+                Thread.sleep(backoff);
             }
             if (!provider.asBinder().pingBinder()) {
                 LOGGER.e("provider is dead %s %d", name, userId);

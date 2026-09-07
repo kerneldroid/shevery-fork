@@ -134,3 +134,5 @@ https://github.com/RikkaApps/Shizuku-API#migration-guide-for-existing-applicatio
 
 * [Nightzuku](https://github.com/kerneldroid/Nightzuku) - 提供了部分应用界面、模块目录系统和 Android 17 支持。
 * [Shizuku](https://github.com/rikkaapps/Shizuku) - 提供了 Shizuku API 和主要源代码。
+
+### 不建议在第三方文件管理器和网站上安装 Shevery，最好去 GitHub 下载。

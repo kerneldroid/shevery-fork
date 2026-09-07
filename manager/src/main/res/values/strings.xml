@@ -113,6 +113,14 @@
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[It\'s highly possible that your device manufacturer limits the permission of adb.<p>There may be a solution for your system in <b><a href="%1$s">this document</a></b>.]]></string>
     <string name="app_management_item_summary_requires_root">* requires Shevery runs with root</string>
     <string name="app_management_loading">Loading apps…</string>
+    <string name="app_management_search_hint">Search applications…</string>
+    <string name="app_management_clear_search">Clear search</string>
+    <string name="app_management_filter_all">All (%1$d)</string>
+    <string name="app_management_filter_allowed">Allowed (%1$d)</string>
+    <string name="app_management_filter_denied">Denied (%1$d)</string>
+    <string name="app_management_no_search_results">No matching applications</string>
+    <string name="app_management_no_search_results_desc">Try checking the spelling or resetting filters.</string>
+    <string name="app_management_clear_filters">Reset filters</string>
 
     <!-- Terminal -->
     <string name="home_terminal_title">Use Shevery in terminal apps</string>
@@ -372,13 +380,14 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="notification_control_text_stopped">Tap to open Shevery, or expand this notification to start it.</string>
     <string name="notification_control_action_start">Start</string>
     <string name="notification_control_action_stop">Stop</string>
+    <string name="settings_update_group_title">Update</string>
     <!-- Update Settings -->
-    <string name="update_settings_title">Update Settings</string>
+    <string name="update_settings_title">Module Updates</string>
     <string name="update_settings_catalog">Module Catalog</string>
     <string name="update_settings_catalog_enabled">Enable catalog</string>
     <string name="update_settings_catalog_enabled_summary">Show discovered modules from GitHub Topics</string>
     <string name="update_settings_frequency">Update Frequency</string>
-    <string name="update_settings_frequency_label">Check for updates</string>
+    <string name="update_settings_frequency_label">Check frequency</string>
     <string name="update_settings_frequency_manual">Manual</string>
     <string name="update_settings_frequency_daily">Daily</string>
     <string name="update_settings_frequency_weekly">Weekly</string>
@@ -398,6 +407,27 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="update_settings_github_pat_clear">Clear</string>
     <string name="update_settings_github_pat_delete">Delete token</string>
     <string name="update_settings_github_pat_delete_summary">Remove stored GitHub token</string>
+
+    <!-- Shevery App Updates -->
+    <string name="shevery_update_check_title">Check for Shevery updates</string>
+    <string name="shevery_update_check_summary">Check for newer versions of Shevery manager</string>
+    <string name="shevery_update_checking">Checking for Shevery updates…</string>
+    <string name="shevery_update_up_to_date">Shevery is up to date (%s)</string>
+    <string name="shevery_update_available_title">New Shevery update available!</string>
+    <string name="shevery_update_available_msg">Version %1$s is available (current: %2$s)</string>
+    <string name="shevery_update_download_apk">Download APK</string>
+    <string name="shevery_update_view_release">View on GitHub</string>
+    <string name="shevery_update_channel">Update channel</string>
+    <string name="shevery_update_channel_summary">Choose update release channel</string>
+    <string name="app_update_channel_stable">Stable</string>
+    <string name="app_update_channel_beta">Pre-release &amp; Beta</string>
+    <string name="shevery_update_auto_check">Check for updates in background</string>
+    <string name="shevery_update_auto_check_summary">Look for new versions even when the app is closed</string>
+    <string name="shevery_update_group_title">Shevery App Updates</string>
+    <string name="shevery_update_modules_group_title">Module Updates &amp; Catalog</string>
+    <string name="shevery_update_check_failed">Update check failed: %s</string>
+    <string name="home_update_available_title">Shevery update available: %s</string>
+    <string name="home_update_available_body">A newer version is ready. Tap to download.</string>
 
     <!-- Module Catalog -->
     <string name="modules_catalog">Catalog</string>
@@ -596,4 +626,11 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="settings_compat_stub_uninstalled">Legacy stub removed</string>
     <string name="settings_compat_stub_failed">Failed to %1$s the legacy stub via %2$s: %3$s</string>
     <string name="settings_compat_stub_none">No channel available (start Shevery first)</string>
+
+    <!-- TCP Mode Enable Prompt Dialog -->
+    <string name="tcp_prompt_dialog_title">Enable Persistent TCP Mode?</string>
+    <string name="tcp_prompt_dialog_message">Shevery is running, but Persistent TCP Mode is currently disabled.\n\nEnabling TCP Mode allows Shevery to stay running and auto-reconnect in the background—even without Wi-Fi—until your device is restarted.</string>
+    <string name="tcp_prompt_dialog_enable">Enable</string>
+    <string name="tcp_prompt_dialog_later">Not Now</string>
+    <string name="tcp_prompt_dialog_do_not_remind">Don\'t remind me again</string>
 </resources>

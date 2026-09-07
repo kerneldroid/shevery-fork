@@ -34,6 +34,9 @@ class BootCompleteReceiver : BroadcastReceiver() {
 
         if (UserHandleCompat.myUserId() > 0 || Shizuku.pingBinder()) return
 
+        // Schedule app auto-update check (cheap, no-op if already scheduled)
+        moe.shizuku.manager.module.update.SheveryAutoUpdateWorker.maybeSchedule(context)
+
         if (ShizukuSettings.getStartOnBootAdb()
             && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (context.checkSelfPermission(WRITE_SECURE_SETTINGS) != PackageManager.PERMISSION_GRANTED) {
@@ -168,6 +171,12 @@ class BootCompleteReceiver : BroadcastReceiver() {
             com.topjohnwu.superuser.Shell.getCachedShell()?.close()
             return
         }
-        com.topjohnwu.superuser.Shell.cmd(moe.shizuku.manager.starter.Starter.internalCommand).exec()
+        try {
+            moe.shizuku.manager.utils.ShizukuStateMachine.set(moe.shizuku.manager.utils.ShizukuStateMachine.State.STARTING)
+            com.topjohnwu.superuser.Shell.cmd(moe.shizuku.manager.starter.Starter.internalCommand).exec()
+        } catch (e: Exception) {
+            Log.e(AppConstants.TAG, "Failed to start Shizuku with root on boot", e)
+            moe.shizuku.manager.utils.ShizukuStateMachine.update()
+        }
     }
 }

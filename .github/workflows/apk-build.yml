@@ -19,13 +19,16 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      TRUSTED_CONTEXT: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -37,14 +40,34 @@ jobs:
 
       - name: Determine build type
         run: |
-          if [ "${{ github.event.inputs.build_type }}" == "release" ]; then
-            echo "build_type=release" >> "$GITHUB_ENV"
-          else
+          if [ "${{ github.event.inputs.build_type }}" == "debug" ]; then
             echo "build_type=debug" >> "$GITHUB_ENV"
+          else
+            echo "build_type=release" >> "$GITHUB_ENV"
           fi
 
-      - name: Generate debug keystore
-        if: env.build_type == 'release'
+      - name: Configure signing
+        if: env.TRUSTED_CONTEXT == 'true'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$SIGNING_STORE_PASSWORD" ] || [ -z "$SIGNING_KEY_ALIAS" ] || [ -z "$SIGNING_KEY_PASSWORD" ]; then
+            echo "::warning::Signing secrets are not configured - the APK falls back to debug signing."
+            exit 0
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > key.jks
+          {
+            printf 'KEYSTORE_FILE=key.jks\n'
+            printf 'KEYSTORE_PASSWORD=%s\n' "$SIGNING_STORE_PASSWORD"
+            printf 'KEYSTORE_ALIAS=%s\n' "$SIGNING_KEY_ALIAS"
+            printf 'KEYSTORE_ALIAS_PASSWORD=%s\n' "$SIGNING_KEY_PASSWORD"
+          } > signing.properties
+
+      - name: Generate random debug keystore
+        if: env.build_type == 'release' && (env.TRUSTED_CONTEXT != 'true' || env.HAS_KEYSTORE != 'true')
         run: |
           mkdir -p ~/.config/.android
           keytool -genkeypair -v -keystore ~/.config/.android/debug.keystore \
@@ -52,10 +75,19 @@ jobs:
             -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -keysize 2048 -validity 10000
 
       - name: Build APK
-        run: sh gradlew.bin :manager:assemble${{ env.build_type == 'release' && 'Release' || 'Debug' }}
+        run: |
+          chmod +x gradlew gradlew.bin 2>/dev/null || true
+          ./gradlew :manager:assemble${{ env.build_type == 'release' && 'Release' || 'Debug' }}
+
+      - name: Verify APK signature
+        if: env.build_type == 'release'
+        run: |
+          APK=$(ls manager/build/outputs/apk/release/*.apk | head -n1)
+          APKSIGNER=$(ls -d "$ANDROID_SDK_ROOT"/build-tools/*/apksigner | sort -V | tail -n1)
+          "$APKSIGNER" verify --print-certs "$APK"
 
       - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: shevery-${{ env.build_type }}
           path: manager/build/outputs/apk/${{ env.build_type }}/*.apk

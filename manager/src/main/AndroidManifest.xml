@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-sdk tools:overrideLibrary="com.rosan.dhizuku.api, androidx.wear.compose.material3, androidx.wear.compose.foundation, androidx.wear.compose.material.core, androidx.wear.compose.material" />
+    <uses-sdk tools:overrideLibrary="com.rosan.dhizuku.api" />
 
     <queries>
         <package android:name="moe.shizuku.privileged.api" />
@@ -157,7 +157,7 @@
             android:directBootAware="true"
             android:excludeFromRecents="true"
             android:exported="true"
-            android:permission="moe.shizuku.manager.permission.MANAGER"
+            android:permission="android.permission.INTERACT_ACROSS_USERS_FULL"
             android:theme="@style/GrantPermissions">
             <intent-filter>
                 <action android:name="${applicationId}.intent.action.REQUEST_PERMISSION" />
@@ -196,8 +196,12 @@
             android:name=".adb.AdbPairingService"
             android:enabled="true"
             android:exported="false"
-            android:foregroundServiceType="shortService"
-            tools:targetApi="34" />
+            android:foregroundServiceType="specialUse"
+            tools:targetApi="34">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Handles wireless ADB pairing flow, including mDNS discovery, user code entry, and TLS handshake with the remote device." />
+        </service>
 
         <service
             android:name=".dhizuku.DhizukuService"
@@ -301,6 +305,10 @@
             android:name=".connector.ShizukuConnectorProvider"
             android:authorities="${applicationId}.connector;moe.shizuku.privileged.api.connector"
             android:exported="true" />
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse" />
     </application>
 
 </manifest>

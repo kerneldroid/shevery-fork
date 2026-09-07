@@ -19,3 +19,4 @@ signing.properties
 
 **/build/
 *.jks
+.agents/

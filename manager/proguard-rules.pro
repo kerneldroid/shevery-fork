@@ -68,3 +68,13 @@
 -keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
+
+# AndroidX WorkManager, Room, and App Startup
+-keep class * extends androidx.room.RoomDatabase {
+    <init>();
+}
+-keep class androidx.work.impl.** { *; }
+-dontwarn androidx.work.impl.**
+-keep class * extends androidx.startup.Initializer { *; }
+-keep class androidx.work.WorkManagerInitializer { *; }
+

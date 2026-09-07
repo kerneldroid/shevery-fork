@@ -104,8 +104,6 @@ import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
 import moe.shizuku.manager.ui.compose.ShizukuScaffold
 import java.util.Locale
 
-private enum class SortMode { NEWEST, OLDEST, STARS, OFFICIAL }
-
 private const val MAX_BANNER_BYTES = 512 * 1024
 private const val MAX_README_CHARS = 16000
 
@@ -135,7 +133,6 @@ fun CatalogScreen(onNavigateUp: () -> Unit) {
     var installedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
-    var sortMode by remember { mutableStateOf(SortMode.STARS) }
     var showTokenDialog by remember { mutableStateOf(false) }
     var showInstallDialog by remember { mutableStateOf<DiscoveredModule?>(null) }
     var detailModule by remember { mutableStateOf<DiscoveredModule?>(null) }
@@ -165,13 +162,8 @@ fun CatalogScreen(onNavigateUp: () -> Unit) {
         installedIds = AdbModuleManager.listModules(context).map { it.id }.toSet()
     }
 
-    val sortedModules = remember(modules, sortMode) {
-        when (sortMode) {
-            SortMode.NEWEST -> modules.sortedByDescending { it.lastChecked }
-            SortMode.OLDEST -> modules.sortedBy { it.lastChecked }
-            SortMode.STARS -> modules.sortedByDescending { it.stars }
-            SortMode.OFFICIAL -> modules.sortedByDescending { it.isOfficial }
-        }
+    val sortedModules = remember(modules) {
+        modules.sortedByDescending { it.stars }
     }
 
     ShizukuExpressiveTheme {
@@ -206,9 +198,7 @@ fun CatalogScreen(onNavigateUp: () -> Unit) {
                     installedIds = installedIds,
                     isLoading = isLoading,
                     error = error,
-                    sortMode = sortMode,
                     installing = installing,
-                    onSortChange = { sortMode = it },
                     onRefresh = {
                         scope.launch {
                             isLoading = true; error = null
@@ -351,9 +341,7 @@ private fun CatalogListScreen(
     installedIds: Set<String>,
     isLoading: Boolean,
     error: String?,
-    sortMode: SortMode,
     installing: String?,
-    onSortChange: (SortMode) -> Unit,
     onRefresh: () -> Unit,
     onCardClick: (DiscoveredModule) -> Unit,
     onInstall: (DiscoveredModule) -> Unit,
@@ -371,8 +359,6 @@ private fun CatalogListScreen(
             }
         }
     ) {
-        item { SortChipRow(sortMode = sortMode, onSortChange = onSortChange) }
-
         item {
             AnimatedVisibility(visible = isLoading, enter = fadeIn(), exit = fadeOut()) {
                 Row(
@@ -642,30 +628,6 @@ private fun DetailChip(
 }
 
 @Composable
-private fun SortChipRow(sortMode: SortMode, onSortChange: (SortMode) -> Unit) {
-    val labels = listOf(
-        stringResource(R.string.modules_catalog_sort_stars),
-        stringResource(R.string.modules_catalog_sort_newest),
-        stringResource(R.string.modules_catalog_sort_oldest),
-        stringResource(R.string.modules_catalog_sort_official)
-    )
-    val entries = listOf(SortMode.STARS, SortMode.NEWEST, SortMode.OLDEST, SortMode.OFFICIAL)
-
-    SingleChoiceSegmentedButtonRow(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)
-    ) {
-        entries.forEachIndexed { index, mode ->
-            SegmentedButton(
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = entries.size),
-                onClick = { onSortChange(mode) },
-                selected = sortMode == mode,
-                label = { Text(labels[index], style = MaterialTheme.typography.labelSmall) }
-            )
-        }
-    }
-}
-
-@Composable
 private fun CatalogModuleCard(
     module: DiscoveredModule,
     installed: Boolean,
@@ -678,7 +640,7 @@ private fun CatalogModuleCard(
     Surface(
         modifier = modifier.fillMaxWidth().clickable(onClick = onCardClick),
         shape = MaterialTheme.shapes.large,
-        color = if (installed) MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f) else MaterialTheme.colorScheme.surfaceContainerLow,
+        color = if (installed) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
         tonalElevation = if (installed) 0.dp else 2.dp
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -714,15 +676,16 @@ private fun CatalogModuleCard(
 @Composable
 private fun CatalogAvatar(ownerAvatar: String, moduleName: String, modifier: Modifier = Modifier) {
     val initials = remember(moduleName) { moduleName.take(2).uppercase(Locale.getDefault()) }
+    val avatarShape = RoundedCornerShape(12.dp)
     if (ownerAvatar.isNotBlank()) {
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current).data(ownerAvatar).crossfade(true).build(),
             contentDescription = moduleName,
-            modifier = modifier.clip(CircleShape),
+            modifier = modifier.clip(avatarShape),
             contentScale = ContentScale.Crop
         )
     } else {
-        Box(modifier = modifier.clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+        Box(modifier = modifier.clip(avatarShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
             Text(initials, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
         }
     }

@@ -1,5 +1,6 @@
 package rikka.shizuku.server.api;
 
+import android.os.Build;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
 import android.os.RemoteException;
@@ -110,6 +111,14 @@ public class RemoteProcessHolder extends IRemoteProcess.Stub {
     @Override
     public boolean waitForTimeout(long timeout, String unitName) throws RemoteException {
         TimeUnit unit = TimeUnit.valueOf(unitName);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                return process.waitFor(timeout, unit);
+            } catch (InterruptedException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+
         long startTime = System.nanoTime();
         long rem = unit.toNanos(timeout);
 

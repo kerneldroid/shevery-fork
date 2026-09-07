@@ -6,7 +6,10 @@ data class ModuleUpdateInfo(
     val newVersion: String,
     val newVersionCode: Long? = null,
     val zipUrl: String,
-    val changelog: String? = null
+    val changelog: String? = null,
+    val repoOwner: String? = null,
+    val repoName: String? = null,
+    val subPath: String? = null
 )
 
 data class AdbModule(

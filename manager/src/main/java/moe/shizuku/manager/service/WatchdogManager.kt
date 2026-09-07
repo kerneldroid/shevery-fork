@@ -31,6 +31,7 @@ import moe.shizuku.manager.module.ModuleSettings
 import moe.shizuku.server.IShizukuService
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.utils.EnvironmentUtils
+import moe.shizuku.manager.utils.ShizukuStateMachine
 import rikka.shizuku.Shizuku
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -51,6 +52,9 @@ object WatchdogManager {
     private const val WIRELESS_ADB_DISCOVERY_TIMEOUT_SECONDS = 5L
     private const val DHIZUKU_BIND_TIMEOUT_MS = 10_000L
     private const val KEY_USER_STOP_REQUESTED = "watchdog_user_stop_requested"
+
+    @Volatile
+    var isStarterActive = false
 
     @Volatile
     var expectingDeath = false
@@ -106,6 +110,11 @@ object WatchdogManager {
 
     private fun onServiceDied(context: Context) {
         logd("Service died detected by watchdog")
+
+        if (isStarterActive) {
+            logi("Service death occurred while StarterActivity is active. Suppressing watchdog restart.")
+            return
+        }
 
         if (consumeExpectedDeath()) {
             logi("Service death was expected. Resetting expected-death flag.")
@@ -194,13 +203,18 @@ object WatchdogManager {
             .apply()
     }
 
-    private fun isUserStopRequested(): Boolean {
+    fun isUserStopRequested(): Boolean {
         return userStopRequested || ShizukuSettings.getPreferences().getBoolean(KEY_USER_STOP_REQUESTED, false)
     }
 
     fun attemptRestart(context: Context) {
         val appContext = context.applicationContext
         clearExpectedDeathWhenStale()
+
+        if (isStarterActive) {
+            logi("Skipping watchdog restart because StarterActivity is active")
+            return
+        }
 
         if (isUserStopRequested()) {
             logi("Skipping watchdog restart because the last stop was user-initiated")
@@ -284,12 +298,7 @@ object WatchdogManager {
     }
 
     private suspend fun waitUntilBinderStops(timeoutMs: Long): Boolean {
-        val deadline = SystemClock.elapsedRealtime() + timeoutMs
-        while (SystemClock.elapsedRealtime() < deadline) {
-            if (!Shizuku.pingBinder()) return true
-            delay(250L)
-        }
-        return !Shizuku.pingBinder()
+        return ShizukuStateMachine.awaitStopped(timeoutMs)
     }
 
     private fun forceStopServerProcess(): String? {
@@ -298,7 +307,7 @@ object WatchdogManager {
             val binder = Shizuku.getBinder() ?: return "binder was null"
             val service = IShizukuService.Stub.asInterface(binder)
             val process = service.newProcess(
-                arrayOf("sh", "-c", "for pid in $(pidof shevery_server 2>/dev/null); do kill -9 \"\$pid\"; done"),
+                arrayOf("sh", "-c", "for pid in $(pidof shizuku_server shevery_server 2>/dev/null); do kill -9 \"\$pid\"; done"),
                 null,
                 null
             )
@@ -400,12 +409,7 @@ object WatchdogManager {
     }
 
     private suspend fun waitForShizukuBinder(timeoutMs: Long = 10_000L): Boolean {
-        val deadline = SystemClock.elapsedRealtime() + timeoutMs
-        while (SystemClock.elapsedRealtime() < deadline) {
-            if (Shizuku.pingBinder()) return true
-            kotlinx.coroutines.delay(500)
-        }
-        return Shizuku.pingBinder()
+        return ShizukuStateMachine.awaitRunning(timeoutMs)
     }
 
     private suspend fun restartDhizuku(context: Context) {

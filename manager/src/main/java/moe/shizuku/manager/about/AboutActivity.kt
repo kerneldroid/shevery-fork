@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package moe.shizuku.manager.about
 
 import android.os.Bundle
@@ -9,7 +11,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,7 +27,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import kotlinx.coroutines.launch
 import moe.shizuku.manager.BuildConfig
+import moe.shizuku.manager.module.update.SheveryAppUpdateDialog
+import moe.shizuku.manager.module.update.SheveryAppUpdateResult
+import moe.shizuku.manager.module.update.SheveryUpdateChecker
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppActivity
 import moe.shizuku.manager.ui.compose.ShizukuExpressiveTheme
@@ -38,6 +48,10 @@ class AboutActivity : AppActivity() {
         val versionName = packageManager.getPackageInfo(packageName, 0).versionName ?: "Unknown"
 
         setContent {
+            val scope = rememberCoroutineScope()
+            var isCheckingUpdate by remember { mutableStateOf(false) }
+            var appUpdateResult by remember { mutableStateOf<SheveryAppUpdateResult?>(null) }
+
             ShizukuExpressiveTheme {
                 ShizukuLazyScaffold(
                     title = stringResource(R.string.action_about),
@@ -53,6 +67,27 @@ class AboutActivity : AppActivity() {
 
                     item {
                         AboutDescriptionCard()
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    item {
+                        SettingsGroup(title = stringResource(R.string.shevery_update_group_title)) {
+                            SettingsRow(
+                                icon = R.drawable.ic_outline_notifications_active_24,
+                                title = stringResource(R.string.shevery_update_check_title),
+                                summary = stringResource(R.string.shevery_update_check_summary),
+                                onClick = {
+                                    scope.launch {
+                                        isCheckingUpdate = true
+                                        appUpdateResult = SheveryUpdateChecker.getInstance().checkAppUpdate(this@AboutActivity)
+                                        isCheckingUpdate = false
+                                    }
+                                }
+                            )
+                        }
                     }
 
                     item {
@@ -73,6 +108,31 @@ class AboutActivity : AppActivity() {
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
                         )
                     }
+                }
+
+                if (isCheckingUpdate) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = {},
+                        title = { Text(stringResource(R.string.shevery_update_check_title)) },
+                        text = {
+                            androidx.compose.foundation.layout.Row(
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp),
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            ) {
+                                LoadingIndicator(modifier = Modifier.size(28.dp))
+                                Text(stringResource(R.string.shevery_update_checking))
+                            }
+                        },
+                        confirmButton = {}
+                    )
+                }
+
+                appUpdateResult?.let { result ->
+                    SheveryAppUpdateDialog(
+                        result = result,
+                        onDismiss = { appUpdateResult = null }
+                    )
                 }
             }
         }
@@ -105,7 +165,7 @@ class AboutActivity : AppActivity() {
                         contentDescription = "App Icon",
                         modifier = Modifier
                             .size(96.dp)
-                            .clip(CircleShape)
+                            .clip(RoundedCornerShape(24.dp))
                     )
                 }
 
@@ -122,17 +182,18 @@ class AboutActivity : AppActivity() {
 
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     modifier = Modifier.padding(top = 8.dp)
                 ) {
                     Text(
                         text = "Version $versionName",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                     )
                 }
+
             }
         }
     }
@@ -142,7 +203,7 @@ class AboutActivity : AppActivity() {
         Card(
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -194,6 +255,15 @@ class AboutActivity : AppActivity() {
                 summary = "Join the community support",
                 onClick = {
                     CustomTabsHelper.launchUrlOrCopy(context, "https://t.me/rikkacommunity")
+                }
+            )
+            GroupDivider()
+            SettingsRow(
+                icon = R.drawable.ic_baseline_link_24,
+                title = "Buy me a coffee",
+                summary = "Ko-fi.com/hmndevtech",
+                onClick = {
+                    CustomTabsHelper.launchUrlOrCopy(context, "https://Ko-fi.com/hmndevtech")
                 }
             )
         }

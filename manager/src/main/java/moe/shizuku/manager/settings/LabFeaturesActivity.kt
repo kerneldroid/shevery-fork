@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import moe.shizuku.manager.R
-import moe.shizuku.manager.accessibility.AccessibilityManagerActivity
 import moe.shizuku.manager.app.AppActivity
 import moe.shizuku.manager.module.ModuleSettings
 import moe.shizuku.manager.service.WatchdogManager
@@ -71,21 +70,6 @@ class LabFeaturesActivity : AppActivity() {
                                         dhizukuEnabled = false
                                         ModuleSettings.setDhizukuEnabled(false)
                                     }
-                                }
-                            )
-                        }
-                    }
-
-                    item {
-                        SettingsGroup(title = stringResource(R.string.accessibility_manager_lab_group)) {
-                            SettingsRow(
-                                icon = R.drawable.ic_system_icon,
-                                title = stringResource(R.string.accessibility_manager_lab_title),
-                                summary = stringResource(R.string.accessibility_manager_lab_summary),
-                                onClick = {
-                                    startActivity(
-                                        Intent(this@LabFeaturesActivity, AccessibilityManagerActivity::class.java)
-                                    )
                                 }
                             )
                         }

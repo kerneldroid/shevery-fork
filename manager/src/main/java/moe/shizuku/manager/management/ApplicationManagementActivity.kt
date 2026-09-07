@@ -5,10 +5,10 @@ package moe.shizuku.manager.management
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.os.Bundle
-import android.text.method.LinkMovementMethod
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,25 +16,39 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Clear
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -42,23 +56,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
-import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import moe.shizuku.manager.Helps
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.AppActivity
 import moe.shizuku.manager.authorization.AuthorizationManager
-import moe.shizuku.manager.ktx.toHtml
 import moe.shizuku.manager.ui.compose.ExpressiveSwitch
 import moe.shizuku.manager.ui.compose.ExpressiveCard
 import moe.shizuku.manager.ui.compose.ShizukuExpressiveTheme
 import moe.shizuku.manager.ui.compose.ShizukuIcon
 import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
+import moe.shizuku.manager.utils.CustomTabsHelper
 import moe.shizuku.manager.utils.ShizukuSystemApis
 import moe.shizuku.manager.utils.UserHandleCompat
 import rikka.html.text.HtmlCompat
 import rikka.lifecycle.Status
 import rikka.shizuku.Shizuku
 import java.util.Objects
+
+private enum class AppFilter { ALL, ALLOWED, DENIED }
+
+private data class AppEntry(
+    val packageInfo: PackageInfo,
+    val title: String,
+    val granted: Boolean
+)
 
 class ApplicationManagementActivity : AppActivity() {
 
@@ -94,9 +115,55 @@ class ApplicationManagementActivity : AppActivity() {
         Shizuku.addBinderDeadListener(binderDeadListener)
 
         setContent {
+            val context = LocalContext.current
+            val pm = context.packageManager
             val packagesResource by viewModel.packages.observeAsState()
             val packages = packagesResource?.data.orEmpty()
             val tick = permissionTick.intValue
+            var showAdbLimitedDialog by rememberSaveable { mutableStateOf(false) }
+
+            var searchQuery by rememberSaveable { mutableStateOf("") }
+            var selectedFilter by rememberSaveable { mutableStateOf(AppFilter.ALL) }
+
+            val appEntries = remember(packages, tick) {
+                packages.mapNotNull { pkg ->
+                    val appInfo = pkg.applicationInfo ?: return@mapNotNull null
+                    val uid = appInfo.uid
+                    val userId = UserHandleCompat.getUserId(uid)
+                    val label = appInfo.loadLabel(pm).toString()
+                    val title = if (userId != UserHandleCompat.myUserId()) {
+                        val userInfo = ShizukuSystemApis.getUserInfo(userId)
+                        "$label - ${userInfo.name} ($userId)"
+                    } else {
+                        label
+                    }
+                    val granted = try {
+                        AuthorizationManager.granted(pkg.packageName, uid)
+                    } catch (_: SecurityException) {
+                        false
+                    }
+                    AppEntry(pkg, title, granted)
+                }
+            }
+
+            val totalCount = appEntries.size
+            val allowedCount = remember(appEntries) { appEntries.count { it.granted } }
+            val deniedCount = totalCount - allowedCount
+
+            val filteredEntries = remember(appEntries, searchQuery, selectedFilter) {
+                val query = searchQuery.trim()
+                appEntries.filter { entry ->
+                    val matchesFilter = when (selectedFilter) {
+                        AppFilter.ALL -> true
+                        AppFilter.ALLOWED -> entry.granted
+                        AppFilter.DENIED -> !entry.granted
+                    }
+                    val matchesQuery = query.isEmpty() ||
+                        entry.title.contains(query, ignoreCase = true) ||
+                        entry.packageInfo.packageName.contains(query, ignoreCase = true)
+                    matchesFilter && matchesQuery
+                }
+            }
 
             ShizukuExpressiveTheme {
                 ShizukuLazyScaffold(
@@ -121,14 +188,24 @@ class ApplicationManagementActivity : AppActivity() {
                                         text = { Text(stringResource(R.string.app_management_select_all)) },
                                         onClick = {
                                             menuExpanded = false
-                                            selectAll(packages, true)
+                                            val targetPackages = if (filteredEntries.size < appEntries.size) {
+                                                filteredEntries.map { it.packageInfo }
+                                            } else {
+                                                packages
+                                            }
+                                            selectAll(targetPackages, true)
                                         }
                                     )
                                     DropdownMenuItem(
                                         text = { Text(stringResource(R.string.app_management_deselect_all)) },
                                         onClick = {
                                             menuExpanded = false
-                                            selectAll(packages, false)
+                                            val targetPackages = if (filteredEntries.size < appEntries.size) {
+                                                filteredEntries.map { it.packageInfo }
+                                            } else {
+                                                packages
+                                            }
+                                            selectAll(targetPackages, false)
                                         }
                                     )
                                 }
@@ -166,29 +243,114 @@ class ApplicationManagementActivity : AppActivity() {
                         }
                         else -> {
                             item {
-                                Surface(
+                                Column(
                                     modifier = Modifier.fillMaxWidth(),
-                                    shape = MaterialTheme.shapes.extraLarge,
-                                    color = MaterialTheme.colorScheme.surfaceContainer,
-                                    tonalElevation = 1.dp
+                                    verticalArrangement = Arrangement.spacedBy(10.dp)
                                 ) {
-                                    Column {
-                                        packages.forEachIndexed { index, packageInfo ->
-                                            AppPermissionRow(
-                                                packageInfo = packageInfo,
-                                                tick = tick,
-                                                onLimitedAdb = ::showAdbLimitedDialog,
-                                                onPermissionChanged = {
-                                                    setResult(RESULT_OK)
-                                                    permissionTick.intValue++
-                                                    viewModel.load(onlyCount = true)
-                                                }
+                                    TextField(
+                                        value = searchQuery,
+                                        onValueChange = { searchQuery = it },
+                                        modifier = Modifier.fillMaxWidth(),
+                                        placeholder = { Text(stringResource(R.string.app_management_search_hint)) },
+                                        leadingIcon = {
+                                            Icon(
+                                                imageVector = Icons.Rounded.Search,
+                                                contentDescription = null,
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
-                                            if (index != packages.lastIndex) {
-                                                HorizontalDivider(
-                                                    modifier = Modifier.fillMaxWidth(),
-                                                    color = MaterialTheme.colorScheme.outlineVariant
+                                        },
+                                        trailingIcon = {
+                                            if (searchQuery.isNotEmpty()) {
+                                                IconButton(
+                                                    onClick = { searchQuery = "" },
+                                                    modifier = Modifier.size(48.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Rounded.Clear,
+                                                        contentDescription = stringResource(R.string.app_management_clear_search)
+                                                    )
+                                                }
+                                            }
+                                        },
+                                        singleLine = true,
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        colors = TextFieldDefaults.colors(
+                                            focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent
+                                        )
+                                    )
+
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .horizontalScroll(rememberScrollState()),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        FilterChip(
+                                            selected = selectedFilter == AppFilter.ALL,
+                                            onClick = { selectedFilter = AppFilter.ALL },
+                                            label = { Text(stringResource(R.string.app_management_filter_all, totalCount)) }
+                                        )
+                                        FilterChip(
+                                            selected = selectedFilter == AppFilter.ALLOWED,
+                                            onClick = { selectedFilter = AppFilter.ALLOWED },
+                                            label = { Text(stringResource(R.string.app_management_filter_allowed, allowedCount)) }
+                                        )
+                                        FilterChip(
+                                            selected = selectedFilter == AppFilter.DENIED,
+                                            onClick = { selectedFilter = AppFilter.DENIED },
+                                            label = { Text(stringResource(R.string.app_management_filter_denied, deniedCount)) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            if (filteredEntries.isEmpty()) {
+                                item {
+                                    ExpressiveCard(
+                                        icon = R.drawable.ic_system_icon,
+                                        title = stringResource(R.string.app_management_no_search_results),
+                                        body = stringResource(R.string.app_management_no_search_results_desc)
+                                    ) {
+                                        FilledTonalButton(
+                                            onClick = {
+                                                searchQuery = ""
+                                                selectedFilter = AppFilter.ALL
+                                            },
+                                            modifier = Modifier.padding(top = 8.dp)
+                                        ) {
+                                            Text(stringResource(R.string.app_management_clear_filters))
+                                        }
+                                    }
+                                }
+                            } else {
+                                item {
+                                    Surface(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        shape = MaterialTheme.shapes.extraLarge,
+                                        color = MaterialTheme.colorScheme.surfaceContainer,
+                                        tonalElevation = 1.dp
+                                    ) {
+                                        Column {
+                                            filteredEntries.forEachIndexed { index, entry ->
+                                                AppPermissionRow(
+                                                    entry = entry,
+                                                    tick = tick,
+                                                    onLimitedAdb = { showAdbLimitedDialog = true },
+                                                    onPermissionChanged = {
+                                                        setResult(RESULT_OK)
+                                                        permissionTick.intValue++
+                                                        viewModel.load(onlyCount = true)
+                                                    }
                                                 )
+                                                if (index != filteredEntries.lastIndex) {
+                                                    HorizontalDivider(
+                                                        modifier = Modifier.fillMaxWidth(),
+                                                        color = MaterialTheme.colorScheme.outlineVariant
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -196,6 +358,48 @@ class ApplicationManagementActivity : AppActivity() {
                             }
                         }
                     }
+                }
+
+                if (showAdbLimitedDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showAdbLimitedDialog = false },
+                        title = {
+                            Text(
+                                text = stringResource(R.string.app_management_dialog_adb_is_limited_title),
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                        },
+                        text = {
+                            Text(
+                                text = HtmlCompat.fromHtml(
+                                    getString(R.string.app_management_dialog_adb_is_limited_message, Helps.ADB.get()),
+                                    HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE
+                                ).toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        confirmButton = {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedButton(
+                                    onClick = {
+                                        CustomTabsHelper.launchUrlOrCopy(
+                                            this@ApplicationManagementActivity,
+                                            Helps.ADB.get()
+                                        )
+                                    }
+                                ) {
+                                    Text(stringResource(R.string.home_adb_button_view_help))
+                                }
+                                Button(onClick = { showAdbLimitedDialog = false }) {
+                                    Text(stringResource(android.R.string.ok))
+                                }
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = MaterialTheme.shapes.extraLarge
+                    )
                 }
             }
         }
@@ -234,47 +438,25 @@ class ApplicationManagementActivity : AppActivity() {
         super.onResume()
         permissionTick.intValue++
     }
-
-    private fun showAdbLimitedDialog() {
-        val dialog = MaterialAlertDialogBuilder(this)
-            .setTitle(R.string.app_management_dialog_adb_is_limited_title)
-            .setMessage(
-                getString(R.string.app_management_dialog_adb_is_limited_message, Helps.ADB.get())
-                    .toHtml(HtmlCompat.FROM_HTML_OPTION_TRIM_WHITESPACE)
-            )
-            .setPositiveButton(android.R.string.ok, null)
-            .show()
-
-        dialog.findViewById<android.widget.TextView>(android.R.id.message)?.movementMethod =
-            LinkMovementMethod.getInstance()
-    }
 }
 
 @Composable
 private fun AppPermissionRow(
-    packageInfo: PackageInfo,
+    entry: AppEntry,
     tick: Int,
     onLimitedAdb: () -> Unit,
     onPermissionChanged: () -> Unit
 ) {
     val context = LocalContext.current
     val pm = context.packageManager
+    val packageInfo = entry.packageInfo
     val applicationInfo = packageInfo.applicationInfo ?: return
     val uid = applicationInfo.uid
     val packageName = packageInfo.packageName
     var granted by remember(packageName, uid, tick) {
-        mutableStateOf(AuthorizationManager.granted(packageName, uid))
+        mutableStateOf(entry.granted)
     }
-    val userId = UserHandleCompat.getUserId(uid)
-    val title = remember(packageName, userId) {
-        val label = applicationInfo.loadLabel(pm).toString()
-        if (userId != UserHandleCompat.myUserId()) {
-            val userInfo = ShizukuSystemApis.getUserInfo(userId)
-            "$label - ${userInfo.name} ($userId)"
-        } else {
-            label
-        }
-    }
+    val title = entry.title
     val icon = remember(packageName) {
         applicationInfo.loadIcon(pm).toBitmap(width = 96, height = 96).asImageBitmap()
     }
@@ -310,7 +492,7 @@ private fun AppPermissionRow(
     ) {
         Surface(
             modifier = Modifier.size(46.dp),
-            shape = CircleShape,
+            shape = RoundedCornerShape(14.dp),
             color = MaterialTheme.colorScheme.surfaceContainerHighest
         ) {
             Image(
