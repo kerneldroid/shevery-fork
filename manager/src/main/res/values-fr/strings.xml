@@ -56,13 +56,13 @@ Cela peut être dû à un dysfonctionnement du KeyStore de cet appareil.]]></str
     <string name="adb_pairing_tutorial_content_steps"><![CDATA[Allez dans "Options développeurs" - "Débogage sans fil". Appuyez sur "Associer l\'appareil avec un code d\'association", un code à six chiffres s\'affichera.]]></string>
     <string name="adb_pairing_tutorial_content_enter_pairing_code"><![CDATA[Saisissez le code dans la notification pour terminer l\'association.]]></string>
     <string name="adb_pairing_tutorial_content_notification_blocked"><![CDATA[Le processus d\'association nécessite d\'interagir avec une notification de Shevery. Veuillez autoriser Shevery à envoyer des notifications.]]></string>
-        <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[Sinon, vous ne pourrez pas saisir le code depuis la notification.]]></string>
+    <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[Sinon, vous ne pourrez pas saisir le code depuis la notification.]]></string>
     <string name="adb_pairing_tutorial_content_left_is_clickable"><![CDATA[Remarque : la partie gauche de l\'option "Débogage sans fil" est cliquable et ouvre une nouvelle page. Activer uniquement l\'interrupteur de droite ne suffit pas.]]></string>
     <string name="adb_pairing_tutorial_content_finish"><![CDATA[Revenez sur Shevery et lancez le service.]]></string>
     <string name="adb_pairing_tutorial_content_network"><![CDATA[Shevery nécessite l\'accès au réseau local.]]></string>
     <string name="adb_pairing_tutorial_content_network_limation_not_foreground"><![CDATA[Certains systèmes (comme MIUI) bloquent l\'accès au réseau en arrière-plan. Désactivez l\'optimisation de la batterie pour Shevery.]]></string>
     <string name="home_root_title"><![CDATA[Démarrer (pour appareils rootés)]]></string>
-    <string name="home_root_description"><![CDATA[De plus, Shevery peut démarrer automatiquement au démarrage de l\'appareil. Si ce n\'est pas le caso, vérifiez si votre système ou des outils tiers ont restreint Shevery.<br/>Vous pouvez consulter %s.]]></string>
+    <string name="home_root_description"><![CDATA[De plus, Shevery peut démarrer automatiquement au démarrage de l\'appareil. Si ce n\'est pas le cas, vérifiez si votre système ou des outils tiers ont restreint Shevery.<br/>Vous pouvez consulter %s.]]></string>
     <string name="home_root_description_sui"><![CDATA[Si vous utilisez Magisk, vous pouvez essayer %1$s. Pour les utilisateurs root, cela remplacera à terme Shevery.]]></string>
     <string name="home_root_button_start"><![CDATA[Démarrer]]></string>
     <string name="home_root_button_restart"><![CDATA[Redémarrer]]></string>
@@ -92,7 +92,7 @@ Un redémarrage de Shevery peut être nécessaire.]]></string>
     <string name="terminal_tutorial_1"><![CDATA[Tout d\'abord, exportez les fichiers à l\'emplacement de votre choix. Vous trouverez deux fichiers : %1$s et %2$s.]]></string>
     <string name="terminal_tutorial_1_description"><![CDATA[Si des fichiers du même nom existent dans le dossier, ils seront supprimés.
 
-L\'exportation utilise le SAF (Storage Access Framework). Sur MIUI, le SAF peut être défaillant ; si c\'est le caso, extrayez les fichiers directement de l\'APK de Shevery ou téléchargez-les sur GitHub.]]></string>
+L\'exportation utilise le SAF (Storage Access Framework). Sur MIUI, le SAF peut être défaillant ; si c\'est le cas, extrayez les fichiers directement de l\'APK de Shevery ou téléchargez-les sur GitHub.]]></string>
     <string name="terminal_export_files"><![CDATA[Exporter les fichiers]]></string>
     <string name="terminal_tutorial_2"><![CDATA[Ensuite, utilisez un éditeur de texte pour ouvrir et modifier %1$s.]]></string>
     <string name="terminal_tutorial_2_description"><![CDATA[Par exemple, si vous souhaitez utiliser Shevery dans %1$s, remplacez %2$s par %3$s (%4$s est le nom de paquet de %1$s).]]></string>
@@ -258,7 +258,7 @@ a été copié dans le presse-papiers.]]></string>
     <string name="lab_service_behavior_title"><![CDATA[Comportement du service]]></string>
     <string name="lab_keep_alive_title"><![CDATA[Maintenir le service actif]]></string>
     <string name="lab_keep_alive_summary"><![CDATA[Vérifier périodiquement que le service Shevery est en cours d\'exécution et le redémarrer si nécessaire]]></string>
-    <string name="lab_auto_restart_title"><![CDATA[Redémarrage automatique en caso de plantage]]></string>
+    <string name="lab_auto_restart_title"><![CDATA[Redémarrage automatique en cas de plantage]]></string>
     <string name="lab_auto_restart_summary"><![CDATA[Tenter de redémarrer automatiquement le service Shevery s\'il s\'arrête de manière inattendue]]></string>
     <string name="lab_notify_death_title"><![CDATA[Notifier à l\'arrêt du service]]></string>
     <string name="lab_notify_death_summary"><![CDATA[Afficher une notification lorsque le service Shevery s\'arrête de manière inattendue]]></string>
@@ -370,9 +370,7 @@ a été copié dans le presse-papiers.]]></string>
     <string name="comput_copy_output"><![CDATA[Copier la sortie]]></string>
     <string name="comput_ask_gemini"><![CDATA[Demander à Gemini]]></string>
     <string name="comput_executing"><![CDATA[Exécution : %1$s ...]]></string>
-    <string name="comput_adb_translate"><![CDATA[Mode de traduction de commande ADB actif
-Original : %1$s
-Exécution...]]></string>
+    <string name="comput_adb_translate"><![CDATA[Mode de traduction de commande ADB actif\nOriginal : %1$s\nExécution...]]></string>
     <string name="comput_command_no_output"><![CDATA[La commande s\'est terminée sans sortie.]]></string>
     <string name="comput_timed_out"><![CDATA[[E] La commande a expiré après 120 secondes.]]></string>
     <string name="comput_exit_code"><![CDATA[[E] La commande s\'est terminée avec le code %1$d.]]></string>
@@ -380,8 +378,7 @@ Exécution...]]></string>
     <string name="comput_executing_cmd"><![CDATA[> Exécution de la commande : %1$s]]></string>
     <string name="comput_error_not_running"><![CDATA[Erreur : Le service privilégié Shevery n\'est pas en cours d\'exécution. Veuillez démarrer le service d\'abord.]]></string>
     <string name="comput_error_no_binder"><![CDATA[Erreur : Impossible de récupérer le binder Shevery.]]></string>
-    <string name="comput_console_initialized"><![CDATA[Console initialisée. Service privilégié Shevery connecté.
-Prêt pour les commandes.]]></string>
+    <string name="comput_console_initialized"><![CDATA[Console initialisée. Service privilégié Shevery connecté.\nPrêt pour les commandes.]]></string>
     <string name="comput_ai_explanation"><![CDATA[Explication de l\'IA]]></string>
     <string name="comput_commandium"><![CDATA[Commandium]]></string>
     <string name="comput_commandium_assistant"><![CDATA[Assistant IA Commandium]]></string>
@@ -399,7 +396,7 @@ Prêt pour les commandes.]]></string>
     <string name="comput_record_macro"><![CDATA[Enregistrer une macro]]></string>
     <string name="comput_recording_active"><![CDATA[Enregistrement actif. Exécutez des commandes depuis la saisie principale pour les ajouter à cette macro.]]></string>
     <string name="comput_saved_macros"><![CDATA[Macros enregistrées]]></string>
-        <string name="comput_delete"><![CDATA[Supprimer]]></string>
+    <string name="comput_delete"><![CDATA[Supprimer]]></string>
     <string name="comput_recommand_confirmation_title"><![CDATA[Confirmation ReCommand]]></string>
     <string name="comput_execute"><![CDATA[Exécuter]]></string>
     <string name="comput_cancel"><![CDATA[Annuler]]></string>
@@ -436,16 +433,16 @@ Prêt pour les commandes.]]></string>
     <string name="shevery_update_auto_check_summary"><![CDATA[Rechercher de nouvelles versions même lorsque l\'application est fermée]]></string>
     <string name="home_update_available_title"><![CDATA[Mise à jour Shevery disponible : %s]]></string>
     <string name="home_update_available_body"><![CDATA[Une version plus récente est prête. Appuyez pour télécharger.]]></string>
-    <string name="app_name"><![CDATA[Shevery 2. home_adb_dialog_view_command_notice: Es gibt noch einige andere Überlegungen, bitte bestätige, dass du die Hilfe gelesen hast. 3. home_quick_terminal: Terminal 4. home_quick_wireless: Wireless ADB 5. home_quick_tcp: TCP 5555 6. home_manage_apps_button: Apps verwalten 7. app_management_loading: Apps laden… 8. settings_start_on_boot_adb: Starten bei Boot über Wireless Debugging 9. settings_start_on_boot_adb_summary: Beim Booten wird kurz die Wireless Debugging aktiviert und Shevery über ADB gestartet (TCP-Port 5555). Kein Root erforderlich, Wi-Fi wird nur für einen Moment benötigt. 10. settings_start_on_boot_adb_summary_no_tcp: Beim Booten wird kurz die Wireless Debugging aktiviert und Shevery über ADB gestartet. Kein Root erforderlich, Wi-Fi wird nur für einen Moment benötigt. 11. settings_start_on_boot_adb_granted: WRITE_SECURE_SETTINGS erteilt. 12. settings_start_on_boot_adb_warning_no_tcp: TCP-Bindung (Port 5555) ist deaktiviert: die Wireless Debugging bleibt aktiv. 13. settings_start_on_boot_adb_missing_permission_title: Fehlende Berechtigung 14. settings_start_on_boot_adb_not_running: Shevery wird nicht ausgeführt. Starte den Dienst zuerst, dann komm zurück und aktiviere diese Einstellung. 15. settings_start_on_boot_adb_grant_failed: Die automatische Berechtigungserteilung ist fehlgeschlagen. Führe diesen Befehl von einem Computer aus aus, um sie manuell zu erteilen:]]></string>
-    <string name="settings_start_on_boot_adb_missing_permission_copy"><![CDATA[Kopieren des Befehls]]></string>
-    <string name="shevery_update_check_title"><![CDATA[Kontrollieren Sie, ob es neue Versionen des Shevery-Managers gibt]]></string>
-    <string name="comput_search_desc"><![CDATA[Suchergebnisse]]></string>
-    <string name="accessibility_manager_lab_summary"><![CDATA[Verwalten und aufrechterhalten von Accessibility-Diensten]]></string>
-    <string name="accessibility_daemon_notification_text"><![CDATA[Festgelegte Zugriffsdienste werden wiederhergestellt, wenn sie deaktiviert werden. 2. settings_compat_stub: Legacy-Shizuku-Stub 3. settings_compat_stub_summary: Installiert einen Stub-Paket (moe.shizuku.privileged.api), damit Anwendungen, die nach dem Legacy-Shizuku-Manager suchen, weiterhin funktionieren. Berechtigungs- und Binder-Anfragen werden an Shevery weitergeleitet. 4. settings_compat_stub_installed: Legacy-Stub wurde über %1$s installiert. 5. settings_compat_stub_uninstalled: Legacy-Stub wurde entfernt. 6. settings_compat_stub_failed: Das Legacy-Stub konnte nicht über %2$s %1$s: %3$s]]></string>
+    <string name="app_name"><![CDATA[Shevery]]></string>
+    <string name="settings_start_on_boot_adb_missing_permission_copy"><![CDATA[Copier la commande]]></string>
+    <string name="shevery_update_check_title"><![CDATA[Rechercher des mises à jour pour Shevery Manager]]></string>
+    <string name="comput_search_desc"><![CDATA[Rechercher dans la sortie]]></string>
+    <string name="accessibility_manager_lab_summary"><![CDATA[Gérer et maintenir actifs les services d\'accessibilité]]></string>
+    <string name="accessibility_daemon_notification_text"><![CDATA[Les services d\'accessibilité épinglés seront restaurés s\'ils sont désactivés.]]></string>
     <string name="home_adb_dialog_view_command_notice"><![CDATA[Il y a d\'autres éléments à prendre en compte ; veuillez vous assurer d\'avoir lu l\'aide au préalable.]]></string>
     <string name="home_quick_terminal"><![CDATA[Terminal]]></string>
     <string name="home_quick_wireless"><![CDATA[ADB sans fil]]></string>
-    <string name="home_quick_tcp">TCP5555</string>
+    <string name="home_quick_tcp">TCP 5555</string>
     <string name="home_manage_apps_button"><![CDATA[Gérer les applications]]></string>
     <string name="app_management_loading"><![CDATA[Chargement des applications…]]></string>
     <string name="settings_start_on_boot_adb"><![CDATA[Lancer au démarrage via le débogage sans fil]]></string>
@@ -464,18 +461,18 @@ Prêt pour les commandes.]]></string>
     <string name="starting_root_shell"><![CDATA[Lancement du shell root…]]></string>
     <string name="settings_application"><![CDATA[Application]]></string>
     <string name="settings_appearance"><![CDATA[Aspect]]></string>
-    <string name="notification_startup_channel_name"><![CDATA[La start-up Shevery]]></string>
-    <string name="notification_startup_title"><![CDATA[Shevery, d’entrée de jeu]]></string>
+    <string name="notification_startup_channel_name"><![CDATA[Démarrage de Shevery]]></string>
+    <string name="notification_startup_title"><![CDATA[Démarrage de Shevery]]></string>
     <string name="notification_startup_enabling_wifi"><![CDATA[Activation du débogage Wi-Fi…]]></string>
     <string name="notification_startup_connecting"><![CDATA[Connexion à ADB…]]></string>
-    <string name="notification_startup_started"><![CDATA[Shevery a commencé.]]></string>
+    <string name="notification_startup_started"><![CDATA[Shevery a démarré.]]></string>
     <string name="notification_startup_failed"><![CDATA[Échec du démarrage de Shevery.]]></string>
     <string name="notification_startup_no_port"><![CDATA[Le port de débogage sans fil n\'a pas été détecté dans les 15 secondes.]]></string>
     <string name="notification_startup_no_permission"><![CDATA[Impossible de démarrer au démarrage : une autorisation requise n\'est pas accordée. Ouvrez Shevery et accordez d\'abord cette autorisation.]]></string>
-    <string name="notification_startup_waiting_unlock"><![CDATA[En attente du début du déverrouillage de l\'appareil…]]></string>
+    <string name="notification_startup_waiting_unlock"><![CDATA[En attente du déverrouillage de l\'appareil…]]></string>
     <string name="notification_startup_cancel"><![CDATA[Annuler]]></string>
-    <string name="notification_startup_attempt_now"><![CDATA[Essayez dès maintenant]]></string>
-    <string name="wadb_notification_title"><![CDATA[C\'est parti pour Shevery…]]></string>
+    <string name="notification_startup_attempt_now"><![CDATA[Essayer maintenant]]></string>
+    <string name="wadb_notification_title"><![CDATA[Démarrage de Shevery…]]></string>
     <string name="wadb_notification_wifi_required"><![CDATA[En attente d\'une connexion Wi-Fi avant de continuer]]></string>
     <string name="wadb_notification_retry"><![CDATA[En attente d\'une nouvelle tentative]]></string>
     <string name="wadb_error_title"><![CDATA[Erreur lors du démarrage au lancement du système]]></string>
@@ -483,7 +480,7 @@ Prêt pour les commandes.]]></string>
     <string name="wadb_permission_error_notification_title"><![CDATA[Erreur d\'autorisation]]></string>
     <string name="wadb_permission_error_notification_content"><![CDATA[Shevery n\'a pas pu démarrer au démarrage. Ouvrez Shevery pour vérifier le problème.]]></string>
     <string name="wadb_notification_channel"><![CDATA[Service de démarrage automatique ADB]]></string>
-    <string name="wadb_notification_attempt_now"><![CDATA[Essayez dès maintenant]]></string>
+    <string name="wadb_notification_attempt_now"><![CDATA[Essayer maintenant]]></string>
     <string name="settings_update_group_title"><![CDATA[Mise à jour]]></string>
     <string name="shevery_update_check_summary"><![CDATA[Vérifiez s\'il existe des versions plus récentes de Shevery Manager]]></string>
     <string name="shevery_update_checking"><![CDATA[Recherche de mises à jour pour Shevery…]]></string>
@@ -504,7 +501,7 @@ Prêt pour les commandes.]]></string>
     <string name="comput_hero_title"><![CDATA[Console Shevery]]></string>
     <string name="comput_hero_subtitle"><![CDATA[Un terminal shell puissant sur votre appareil, optimisé par Shizuku.]]></string>
     <string name="comput_status_ready"><![CDATA[Prêt]]></string>
-    <string name="comput_status_running"><![CDATA[Course à pied]]></string>
+    <string name="comput_status_running"><![CDATA[En cours d\'exécution]]></string>
     <string name="comput_status_error"><![CDATA[Erreur]]></string>
     <string name="comput_console_section"><![CDATA[Console]]></string>
     <string name="comput_tab_terminal"><![CDATA[Terminal]]></string>
@@ -521,16 +518,16 @@ Prêt pour les commandes.]]></string>
     <string name="comput_clear_search_desc"><![CDATA[Effacer la recherche]]></string>
     <string name="comput_close_search_desc"><![CDATA[Fermer la recherche]]></string>
     <string name="comput_history_desc"><![CDATA[Historique des commandes]]></string>
-    <string name="comput_history_title"><![CDATA[Histoire]]></string>
+    <string name="comput_history_title"><![CDATA[Historique]]></string>
     <string name="comput_history_empty"><![CDATA[Aucun historique de commandes pour l\'instant]]></string>
     <string name="comput_run_desc"><![CDATA[Exécuter la commande]]></string>
-    <string name="comput_stop_desc"><![CDATA[Commande « Stop »]]></string>
+    <string name="comput_stop_desc"><![CDATA[Arrêter la commande]]></string>
     <string name="comput_scroll_bottom_desc"><![CDATA[Faites défiler jusqu\'en bas de la page]]></string>
     <string name="comput_cancelled"><![CDATA[Commande annulée par l\'utilisateur.]]></string>
-    <string name="accessibility_manager_title"><![CDATA[Responsable de l\'accessibilité]]></string>
+    <string name="accessibility_manager_title"><![CDATA[Gestionnaire d\'accessibilité]]></string>
     <string name="accessibility_manager_lab_group"><![CDATA[Accessibilité]]></string>
-    <string name="accessibility_manager_lab_title"><![CDATA[Responsable de l\'accessibilité]]></string>
-    <string name="accessibility_manager_keep_alive_group"><![CDATA[Maintenir en vie]]></string>
+    <string name="accessibility_manager_lab_title"><![CDATA[Gestionnaire d\'accessibilité]]></string>
+    <string name="accessibility_manager_keep_alive_group"><![CDATA[Maintenir actif]]></string>
     <string name="accessibility_manager_keep_alive_title"><![CDATA[Maintenir les services épinglés actifs]]></string>
     <string name="accessibility_manager_keep_alive_summary"><![CDATA[Réactiver les services d\'accessibilité épinglés lorsque le système ou l\'utilisateur les désactive]]></string>
     <string name="accessibility_manager_auto_boot_title"><![CDATA[Démarrer au démarrage]]></string>
@@ -540,23 +537,22 @@ Prêt pour les commandes.]]></string>
     <string name="accessibility_manager_services_empty"><![CDATA[Aucun service d\'accessibilité installé n\'a été détecté.]]></string>
     <string name="accessibility_manager_service_no_description"><![CDATA[Aucune description fournie par le service.]]></string>
     <string name="accessibility_manager_write_failed"><![CDATA[Échec de la mise à jour des services d\'accessibilité. Vérifiez que Shevery est bien en cours d\'exécution et qu\'il dispose des autorisations nécessaires.]]></string>
-    <string name="accessibility_manager_pin"><![CDATA[Service de maintien de la connexion]]></string>
-    <string name="accessibility_manager_unpin"><![CDATA[Désactiver le service]]></string>
-    <string name="accessibility_daemon_channel_name"><![CDATA[Maintien de la connexion d\'accessibilité]]></string>
-    <string name="accessibility_daemon_notification_title"><![CDATA[Fonction « keep-alive » d\'accessibilité activée]]></string>
-    <string name="settings_compat_stub"><![CDATA[Ébauche de Shizuku (ancienne version)]]></string>
+    <string name="accessibility_manager_pin"><![CDATA[Épingler le service]]></string>
+    <string name="accessibility_manager_unpin"><![CDATA[Désépingler le service]]></string>
+    <string name="accessibility_daemon_channel_name"><![CDATA[Maintien de l\'accessibilité]]></string>
+    <string name="accessibility_daemon_notification_title"><![CDATA[Fonction « keep-alive » d\'accessibilité active]]></string>
+    <string name="settings_compat_stub"><![CDATA[Stub Shizuku hérité]]></string>
     <string name="settings_compat_stub_summary"><![CDATA[Installe un paquet « stub » (moe.shizuku.privileged.api) afin que les applications qui vérifient de manière stricte la présence de l\'ancien gestionnaire Shizuku continuent de fonctionner. Les demandes d\'autorisation et de « binder » sont redirigées vers Shevery.]]></string>
     <string name="settings_compat_stub_installed"><![CDATA[Stub hérité installé via %1$s]]></string>
-    <string name="settings_compat_stub_uninstalled"><![CDATA[Suppression d\'un stub obsolète]]></string>
+    <string name="settings_compat_stub_uninstalled"><![CDATA[Stub hérité supprimé]]></string>
     <string name="settings_compat_stub_failed"><![CDATA[Échec de %1$s du stub hérité via %2$s : %3$s]]></string>
-    <string name="settings_compat_stub_none"><![CDATA[Aucune chaîne disponible (commencez par Shevery)]]></string>
+    <string name="settings_compat_stub_none"><![CDATA[Aucun canal disponible (lancez d\'abord Shevery)]]></string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[Une connexion Wi-Fi est nécessaire lors du premier redémarrage, car Shevery doit se connecter au port de débogage sans fil actuel avant de basculer ADB sur le port 5555.]]></string>
     <string name="adb_pairing_tutorial_content_miui">Les utilisateurs de MIUI devront peut-être changer le style de notification sur « Android » depuis « Notification » - « Nuance de notification » dans les paramètres système.</string>
     <string name="comput_no_macros">Aucune macro enregistrée pour l\'instant. Cliquez sur \'Enregistrer une macro\' pour démarrer l\'enregistrement des commandes de la console.</string>
-
-    <string name="tcp_prompt_dialog_title"><![CDATA[Activer le mode TCP persistant ?]]></string>
+    <string name="tcp_prompt_dialog_title"><![CDATA[Activer le mode TCP persistant ?]]></string>
     <string name="tcp_prompt_dialog_message"><![CDATA[Shevery est en cours d\'exécution, mais le mode TCP persistant est actuellement désactivé.\n\nL\'activation du mode TCP permet à Shevery de rester en cours d\'exécution et de se reconnecter automatiquement en arrière-plan, même sans Wi-Fi, jusqu\'au redémarrage de votre appareil.]]></string>
     <string name="tcp_prompt_dialog_enable"><![CDATA[Activer]]></string>
     <string name="tcp_prompt_dialog_later"><![CDATA[Pas maintenant]]></string>
-    <string name="tcp_prompt_dialog_do_not_remind"><![CDATA[Ne me rappelle plus]]></string>
+    <string name="tcp_prompt_dialog_do_not_remind"><![CDATA[Ne plus me rappeler]]></string>
 </resources>
