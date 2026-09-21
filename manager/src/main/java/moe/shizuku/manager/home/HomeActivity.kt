@@ -39,7 +39,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Home
@@ -48,6 +47,7 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -82,8 +82,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -106,6 +105,7 @@ import moe.shizuku.manager.shell.ShellTutorialActivity
 import moe.shizuku.manager.starter.Starter
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.worker.WifiDebugReassert
+import moe.shizuku.manager.ui.compose.ExpressiveCard
 import moe.shizuku.manager.ui.compose.HtmlText
 import moe.shizuku.manager.ui.compose.htmlToPlainText
 import moe.shizuku.manager.ui.compose.ShizukuIcon
@@ -865,6 +865,7 @@ private fun HomeScreen(
     val scope = rememberCoroutineScope()
     var isRefreshing by remember { mutableStateOf(false) }
     val pullToRefreshState = rememberPullToRefreshState()
+    val appBarScrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     Scaffold(
         contentWindowInsets = WindowInsets(0.dp),
@@ -880,7 +881,8 @@ private fun HomeScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
+                ),
+                scrollBehavior = appBarScrollBehavior
             )
         }
     ) { innerPadding ->
@@ -905,8 +907,10 @@ private fun HomeScreen(
             ) {
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 112.dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(appBarScrollBehavior.nestedScrollConnection),
+                    contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 112.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
             item {
@@ -965,7 +969,7 @@ private fun HomeScreen(
                             onDismiss = { showAppUpdateInstall.value = false },
                         )
                     }
-                    HomeCard(
+                    ExpressiveCard(
                         icon = R.drawable.ic_outline_info_24,
                         title = ctx.getString(R.string.home_update_available_title, version),
                         body = ctx.getString(R.string.home_update_available_body),
@@ -976,7 +980,11 @@ private fun HomeScreen(
             }
 
             item {
-                QuickActionsPills(
+                HomeSectionHeader(stringResource(R.string.home_section_quick_actions))
+            }
+
+            item {
+                QuickActionsRow(
                     running = running,
                     isPrimaryUser = isPrimaryUser,
                     onTerminal = onTerminal,
@@ -988,7 +996,7 @@ private fun HomeScreen(
 
             if (running && !adbPermission) {
                 item {
-                    HomeCard(
+                    ExpressiveCard(
                         icon = R.drawable.ic_warning_24,
                         title = stringResource(R.string.home_adb_is_limited_title),
                         body = stringResource(R.string.home_adb_is_limited_description)
@@ -1027,6 +1035,9 @@ private fun HomeScreen(
             }
 
             if (isPrimaryUser) {
+                item {
+                    HomeSectionHeader(stringResource(R.string.home_section_setup))
+                }
                 item {
                     AdbCommandCard(
                         onShowAdbCommand = onShowAdbCommand,
@@ -1093,7 +1104,7 @@ private fun StatusHero(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
         color = if (running) {
             MaterialTheme.colorScheme.primaryContainer
         } else {
@@ -1229,7 +1240,7 @@ private fun ManageAppsCard(
         stringResource(R.string.home_status_service_not_running, stringResource(R.string.app_name))
     }
 
-    SimpleActionCard(
+    ExpressiveCard(
         icon = R.drawable.ic_system_icon,
         title = title,
         body = body,
@@ -1239,7 +1250,7 @@ private fun ManageAppsCard(
 }
 
 @Composable
-private fun QuickActionsPills(
+private fun QuickActionsRow(
     running: Boolean,
     isPrimaryUser: Boolean,
     onTerminal: () -> Unit,
@@ -1249,25 +1260,43 @@ private fun QuickActionsPills(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            QuickActionPill(
-                icon = Icons.Rounded.Terminal,
-                label = stringResource(R.string.home_quick_terminal),
+            AssistChip(
+                onClick = onTerminal,
                 enabled = running,
-                onClick = onTerminal
+                label = { Text(stringResource(R.string.home_quick_terminal)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Rounded.Terminal,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
             )
             if (isPrimaryUser) {
-                QuickActionPill(
-                    icon = Icons.Rounded.Wifi,
-                    label = stringResource(R.string.home_quick_wireless),
-                    onClick = onStartWirelessAdb
+                AssistChip(
+                    onClick = onStartWirelessAdb,
+                    label = { Text(stringResource(R.string.home_quick_wireless)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.Wifi,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 )
-                QuickActionPill(
-                    icon = Icons.Rounded.NearMe,
-                    label = stringResource(R.string.adb_pairing),
-                    onClick = onPairWirelessAdb
+                AssistChip(
+                    onClick = onPairWirelessAdb,
+                    label = { Text(stringResource(R.string.adb_pairing)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Rounded.NearMe,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
                 )
             }
         }
@@ -1280,48 +1309,14 @@ private fun QuickActionsPills(
 }
 
 @Composable
-private fun QuickActionPill(
-    icon: ImageVector,
-    label: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    Surface(
-        onClick = onClick,
-        enabled = enabled,
-        shape = RoundedCornerShape(percent = 50),
-        color = if (enabled) {
-            MaterialTheme.colorScheme.secondaryContainer
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh
-        }
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = if (enabled) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-                modifier = Modifier.size(20.dp)
-            )
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = if (enabled) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
-            )
-        }
-    }
+private fun HomeSectionHeader(text: String) {
+    Text(
+        text = text,
+        modifier = Modifier.padding(top = 6.dp),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        fontWeight = FontWeight.SemiBold
+    )
 }
 
 @Composable
@@ -1329,7 +1324,7 @@ private fun AdbCommandCard(
     onShowAdbCommand: () -> Unit,
     onOpenAdbHelp: () -> Unit
 ) {
-    HomeCard(
+    ExpressiveCard(
         icon = R.drawable.ic_adb_24dp,
         title = HtmlText(R.string.home_adb_title),
         body = HtmlText(R.string.home_adb_description, Helps.ADB.get())
@@ -1357,7 +1352,7 @@ private fun LocalNetworkPermissionCard(
     localNetworkPermissionState: LocalNetworkPermissionState,
     onRequestLocalNetworkPermission: () -> Unit
 ) {
-    HomeCard(
+    ExpressiveCard(
         icon = R.drawable.ic_warning_24,
         title = stringResource(R.string.home_local_network_title),
         body = stringResource(
@@ -1383,7 +1378,7 @@ private fun DiagnosticsCard(
     diagnostics: String,
     onCopyDiagnostics: (String) -> Unit
 ) {
-    HomeCard(
+    ExpressiveCard(
         icon = R.drawable.ic_outline_info_24,
         title = stringResource(R.string.home_diagnostics_title),
         body = diagnostics
@@ -1398,88 +1393,6 @@ private fun DiagnosticsCard(
                 )
             )
         )
-    }
-}
-
-@Composable
-private fun SimpleActionCard(
-    @DrawableRes icon: Int,
-    title: String,
-    body: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    HomeCard(
-        icon = icon,
-        title = title,
-        body = body,
-        enabled = enabled,
-        onClick = onClick
-    )
-}
-
-@Composable
-private fun HomeCard(
-    @DrawableRes icon: Int,
-    title: String,
-    body: String,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    onClick: (() -> Unit)? = null,
-    content: @Composable () -> Unit = {}
-) {
-    val clickableModifier = if (onClick != null) {
-        Modifier.clickable(enabled = enabled, onClick = onClick)
-    } else {
-        Modifier
-    }
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(clickableModifier)
-            .alpha(if (enabled) 1f else 0.56f),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 2.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(18.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    ShizukuIcon(
-                        icon = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                if (body.isNotBlank()) {
-                    Text(
-                        text = body,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                content()
-            }
-        }
     }
 }
 
@@ -1608,7 +1521,7 @@ private fun buildDiagnostics(
 
 @Composable
 private fun RootCard(onStartRoot: () -> Unit) {
-    HomeCard(
+    ExpressiveCard(
         icon = R.drawable.ic_server_start_24dp,
         title = HtmlText(R.string.home_root_title),
         body = HtmlText(R.string.home_root_description, Helps.SUI.get())
@@ -1628,7 +1541,7 @@ private fun RootCard(onStartRoot: () -> Unit) {
 
 @Composable
 private fun DhizukuCard(onStartDhizuku: () -> Unit) {
-    HomeCard(
+    ExpressiveCard(
         icon = R.drawable.ic_system_icon,
         title = HtmlText(R.string.home_dhizuku_title),
         body = HtmlText(R.string.home_dhizuku_description)
