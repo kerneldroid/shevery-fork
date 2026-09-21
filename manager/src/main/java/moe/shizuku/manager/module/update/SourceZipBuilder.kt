@@ -119,7 +119,7 @@ class SourceZipBuilder private constructor() {
         return relative
     }
 
-    fun getRateLimit(): RateLimitTracker = rateLimit
+
 
     companion object {
         private const val TAG = "SourceZipBuilder"

@@ -19,22 +19,21 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.horizontalScroll
+
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -50,8 +49,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import moe.shizuku.manager.R
@@ -62,8 +59,10 @@ import moe.shizuku.manager.app.ThemeHelper
 import moe.shizuku.manager.app.ThemeHelper.KEY_BLACK_NIGHT_THEME
 import moe.shizuku.manager.app.ThemeHelper.KEY_USE_SYSTEM_COLOR
 import moe.shizuku.manager.ktx.setComponentEnabled
+import moe.shizuku.manager.accessibility.AccessibilityManagerActivity
 import moe.shizuku.manager.compat.StubManager
 import moe.shizuku.manager.module.ModuleSettings
+import moe.shizuku.manager.commandium.AiProviderRepository
 import moe.shizuku.manager.module.update.AppUpdateSettingsGroup
 import moe.shizuku.manager.receiver.BootCompleteReceiver
 import moe.shizuku.manager.adb.AdbStarter
@@ -71,20 +70,19 @@ import moe.shizuku.manager.service.WatchdogManager
 import moe.shizuku.manager.starter.StarterActivity
 import moe.shizuku.manager.utils.EnvironmentUtils
 import moe.shizuku.manager.ui.compose.GroupDivider
+import moe.shizuku.manager.ui.compose.MonospaceLog
+import moe.shizuku.manager.ui.compose.SectionHeader
 import moe.shizuku.manager.ui.compose.SettingsGroup
 import moe.shizuku.manager.ui.compose.SettingsRow
 import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
 import moe.shizuku.manager.ui.compose.SwitchSettingsRow
 import moe.shizuku.manager.ui.compose.htmlToPlainText
-import moe.shizuku.manager.utils.CustomTabsHelper
 import rikka.core.util.ResourceUtils
 import rikka.core.util.ClipboardUtils
 import rikka.material.app.LocaleDelegate
 import rikka.shizuku.Shizuku
 import rikka.shizuku.manager.ShizukuLocales
 import java.util.Locale
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -96,10 +94,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Lifecycle.State
 import android.widget.Toast
 import moe.shizuku.manager.utils.BackupRestoreUtil
+import moe.shizuku.manager.utils.AiExplainUtil
 
 
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(
+    listState: LazyListState = rememberLazyListState()
+) {
     val context = LocalContext.current
     val activity = context as? Activity
     val packageManager = context.packageManager
@@ -139,8 +140,18 @@ fun SettingsScreen() {
     var adbStartOnBoot by remember {
         mutableStateOf(ShizukuSettings.getStartOnBootAdb())
     }
-    var errorProtect by remember {
-        mutableStateOf(ModuleSettings.isErrorProtectEnabled())
+    var watchdog by remember {
+        mutableStateOf(ModuleSettings.isWatchdogEnabled())
+    }
+    var dhizukuEnabled by remember {
+        mutableStateOf(ModuleSettings.isDhizukuEnabled())
+    }
+    var notifyDeath by remember {
+        mutableStateOf(ModuleSettings.isNotifyOnServiceDeath())
+    }
+    var showDhizukuDialog by remember { mutableStateOf(false) }
+    var wifiReassert by remember {
+        mutableStateOf(ModuleSettings.isWifiReassertEnabled())
     }
     var compatStub by remember {
         mutableStateOf(StubManager.isInstalled(context))
@@ -184,23 +195,43 @@ fun SettingsScreen() {
     var recommandAction by remember {
         mutableStateOf(ModuleSettings.recommandForAction())
     }
-    var computApiKey by remember {
-        mutableStateOf(ModuleSettings.getComputApiKey())
+    var computAiName by remember {
+        mutableStateOf(ModuleSettings.getComputAiName())
+    }
+    var computAiBaseUrl by remember {
+        mutableStateOf(ModuleSettings.getComputAiBaseUrl())
+    }
+    var computAiModel by remember {
+        mutableStateOf(ModuleSettings.getComputAiModel())
     }
     var computRecommand by remember {
         mutableStateOf(ModuleSettings.isComputRecommandEnabled())
     }
-    var computGeminiModel by remember {
-        mutableStateOf(ModuleSettings.getComputGeminiModel())
-    }
-    var showApiKeyDialog by remember { mutableStateOf(false) }
-    var showGeminiModelDialog by remember { mutableStateOf(false) }
+    var showAiManager by remember { mutableStateOf(false) }
+    var aiProvidersVersion by remember { mutableStateOf(0) }
     var showMissingPermissionDialog by remember { mutableStateOf(false) }
     var recreateTick by remember { mutableIntStateOf(0) }
     var showUpdateSettings by remember { mutableStateOf(false) }
 
+    // AI Provider manager replaces the whole Settings screen while open:
+    // composing it after the Scaffold stacked a second TopAppBar over this
+    // screen's (dead touches on its buttons); early-return keeps one top bar.
+    if (showAiManager) {
+        BackHandler { showAiManager = false }
+        AiManagerScreen(
+            onNavigateUp = { showAiManager = false },
+            onChanged = {
+                aiProvidersVersion++
+                computAiName = ModuleSettings.getComputAiName()
+                computAiBaseUrl = ModuleSettings.getComputAiBaseUrl()
+                computAiModel = ModuleSettings.getComputAiModel()
+            }
+        )
+        return
+    }
+
     fun tcpModeNeedsRestart(enabled: Boolean): Boolean {
-        val currentPort = EnvironmentUtils.getAdbTcpPort()
+        val currentPort = EnvironmentUtils.getActiveAdbPort()
         return Shizuku.pingBinder() && currentPort > 0 && when {
             enabled -> currentPort != AdbStarter.TCP_MODE_PORT
             else -> currentPort == AdbStarter.TCP_MODE_PORT
@@ -208,7 +239,7 @@ fun SettingsScreen() {
     }
 
     fun restartAdbForTcpMode() {
-        val port = EnvironmentUtils.getAdbTcpPort().takeIf { it > 0 } ?: return
+        val port = EnvironmentUtils.getActiveAdbPort().takeIf { it > 0 } ?: return
         WatchdogManager.clearUserStopRequest(context)
         activity?.startActivity(
             Intent(context, StarterActivity::class.java).apply {
@@ -262,7 +293,9 @@ fun SettingsScreen() {
                 Toast.makeText(context, "Restore completed successfully", Toast.LENGTH_SHORT).show()
                 startOnBoot = ShizukuSettings.getStartOnBoot()
                 adbStartOnBoot = ShizukuSettings.getStartOnBootAdb()
-                errorProtect = ModuleSettings.isErrorProtectEnabled()
+                watchdog = ModuleSettings.isWatchdogEnabled()
+                dhizukuEnabled = ModuleSettings.isDhizukuEnabled()
+                notifyDeath = ModuleSettings.isNotifyOnServiceDeath()
                 languageTag = prefs.getString(LANGUAGE, "SYSTEM") ?: "SYSTEM"
                 nightMode = ShizukuSettings.getNightMode()
                 blackNightTheme = ThemeHelper.isBlackNightTheme(context)
@@ -272,9 +305,10 @@ fun SettingsScreen() {
                 moduleBackground = ModuleSettings.allowBackgroundActions()
                 recommandWebUi = ModuleSettings.recommandForWebUi()
                 recommandAction = ModuleSettings.recommandForAction()
-                computApiKey = ModuleSettings.getComputApiKey()
+                computAiName = ModuleSettings.getComputAiName()
+                computAiBaseUrl = ModuleSettings.getComputAiBaseUrl()
+                computAiModel = ModuleSettings.getComputAiModel()
                 computRecommand = ModuleSettings.isComputRecommandEnabled()
-                computGeminiModel = ModuleSettings.getComputGeminiModel()
                 recreateTick++
             }.onFailure {
                 Toast.makeText(context, "Restore failed: ${it.message}", Toast.LENGTH_LONG).show()
@@ -301,8 +335,6 @@ fun SettingsScreen() {
             stringResource(rikka.core.R.string.follow_system)
         }
     }
-    val contributors = htmlToPlainText(context.getString(R.string.translation_contributors))
-
     LaunchedEffect(recreateTick) {
         if (recreateTick > 0) {
             delay(260)
@@ -340,7 +372,8 @@ fun SettingsScreen() {
         ShizukuLazyScaffold(
             title = stringResource(R.string.settings_title),
             onNavigateUp = null,
-            bottomInset = 112.dp
+            bottomInset = 112.dp,
+            listState = listState
         ) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_application)) {
@@ -411,11 +444,48 @@ fun SettingsScreen() {
                     icon = R.drawable.ic_server_restart,
                     title = stringResource(R.string.error_protect_title),
                     summary = stringResource(R.string.error_protect_summary),
-                    checked = errorProtect,
+                    checked = watchdog,
                     onCheckedChange = { enabled ->
-                        ModuleSettings.setErrorProtectEnabled(enabled)
-                        errorProtect = ModuleSettings.isErrorProtectEnabled()
+                        ModuleSettings.setWatchdogEnabled(enabled)
+                        watchdog = ModuleSettings.isWatchdogEnabled()
                         moe.shizuku.manager.service.WatchdogManager.reconcileService(context)
+                    }
+                )
+                GroupDivider()
+                SwitchSettingsRow(
+                    icon = R.drawable.ic_outline_info_24,
+                    title = stringResource(R.string.dhizuku_mode_title),
+                    summary = stringResource(R.string.dhizuku_mode_summary),
+                    checked = dhizukuEnabled,
+                    onCheckedChange = { enabled ->
+                        if (enabled) {
+                            showDhizukuDialog = true
+                        } else {
+                            ModuleSettings.setDhizukuEnabled(false)
+                            dhizukuEnabled = false
+                        }
+                    }
+                )
+                GroupDivider()
+                SwitchSettingsRow(
+                    icon = R.drawable.ic_outline_notifications_active_24,
+                    title = stringResource(R.string.lab_notify_death_title),
+                    summary = stringResource(R.string.lab_notify_death_summary),
+                    checked = notifyDeath,
+                    onCheckedChange = { enabled ->
+                        ModuleSettings.setNotifyOnServiceDeath(enabled)
+                        notifyDeath = ModuleSettings.isNotifyOnServiceDeath()
+                    }
+                )
+                GroupDivider()
+                SwitchSettingsRow(
+                    icon = R.drawable.ic_adb_24dp,
+                    title = stringResource(R.string.settings_wifi_reassert_title),
+                    summary = stringResource(R.string.settings_wifi_reassert_summary),
+                    checked = wifiReassert,
+                    onCheckedChange = { enabled ->
+                        ModuleSettings.setWifiReassertEnabled(enabled)
+                        wifiReassert = ModuleSettings.isWifiReassertEnabled()
                     }
                 )
                 GroupDivider()
@@ -479,37 +549,18 @@ fun SettingsScreen() {
         }
 
         item {
-            SettingsGroup(title = stringResource(R.string.settings_appearance)) {
-                SectionHeader(stringResource(R.string.settings_language))
+            SettingsGroup(title = stringResource(R.string.settings_language)) {
                 SettingsRow(
                     icon = R.drawable.ic_outline_translate_24,
                     title = stringResource(R.string.settings_language),
                     summary = languageSummary,
                     onClick = { showLanguageDialog = true }
                 )
-                GroupDivider()
-                if (contributors.isNotBlank()) {
-                    SettingsRow(
-                        icon = R.drawable.ic_outline_info_24,
-                        title = stringResource(R.string.settings_translation_contributors),
-                        summary = contributors,
-                        onClick = null
-                    )
-                    GroupDivider()
-                }
-                SettingsRow(
-                    icon = R.drawable.ic_baseline_link_24,
-                    title = stringResource(R.string.settings_translation),
-                    summary = stringResource(
-                        R.string.settings_translation_summary,
-                        stringResource(R.string.app_name)
-                    ),
-                    onClick = {
-                        CustomTabsHelper.launchUrlOrCopy(context, context.getString(R.string.translation_url))
-                    }
-                )
-                GroupDivider()
-                SectionHeader(stringResource(rikka.core.R.string.dark_theme))
+            }
+        }
+
+        item {
+            SettingsGroup(title = stringResource(R.string.settings_appearance)) {
                 SettingsRow(
                     icon = R.drawable.ic_outline_dark_mode_24,
                     title = stringResource(rikka.core.R.string.dark_theme),
@@ -602,8 +653,7 @@ fun SettingsScreen() {
         }
 
         item {
-            SettingsGroup(title = stringResource(R.string.settings_application)) {
-                SectionHeader(stringResource(R.string.settings_update_group_title))
+            SettingsGroup(title = stringResource(R.string.settings_update_group_title)) {
                 SettingsRow(
                     icon = R.drawable.ic_settings_outline_24dp,
                     title = stringResource(R.string.update_settings_title),
@@ -621,16 +671,16 @@ fun SettingsScreen() {
             SettingsGroup(title = stringResource(R.string.comput_settings)) {
                 SettingsRow(
                     icon = R.drawable.ic_code_24dp,
-                    title = stringResource(R.string.comput_ai_api_key_title),
-                    summary = if (computApiKey.isBlank()) stringResource(R.string.comput_ai_api_key_not_configured) else "••••••••••••••••" + computApiKey.takeLast(4),
-                    onClick = { showApiKeyDialog = true }
-                )
-                GroupDivider()
-                SettingsRow(
-                    icon = R.drawable.ic_outline_info_24,
-                    title = stringResource(R.string.comput_gemini_model_title),
-                    summary = computGeminiModel,
-                    onClick = { showGeminiModelDialog = true }
+                    title = stringResource(R.string.comput_ai_provider_title),
+                    summary = aiProvidersVersion.let {
+                        AiProviderRepository.getActive()?.let { active ->
+                            computProviderSummary(
+                                active.name,
+                                active.model.ifBlank { AiExplainUtil.resolveModel(active.baseUrl) },
+                            )
+                        } ?: computAiBaseUrl
+                    },
+                    onClick = { showAiManager = true }
                 )
                 GroupDivider()
                 SwitchSettingsRow(
@@ -648,6 +698,14 @@ fun SettingsScreen() {
 
         item {
             SettingsGroup(title = stringResource(R.string.settings_sections_title)) {
+                SectionHeader(stringResource(R.string.accessibility_manager_lab_group))
+                SettingsRow(
+                    icon = R.drawable.ic_system_icon,
+                    title = stringResource(R.string.accessibility_manager_lab_title),
+                    summary = stringResource(R.string.accessibility_manager_lab_summary),
+                    onClick = { context.startActivity(Intent(context, AccessibilityManagerActivity::class.java)) }
+                )
+                GroupDivider()
                 SectionHeader(stringResource(R.string.lab_features_title))
                 SettingsRow(
                     icon = R.drawable.ic_settings_outline_24dp,
@@ -787,6 +845,32 @@ fun SettingsScreen() {
         )
     }
 
+    if (showDhizukuDialog) {
+        AlertDialog(
+            onDismissRequest = { showDhizukuDialog = false },
+            title = { Text(stringResource(R.string.dhizuku_warning_title)) },
+            text = { Text(stringResource(R.string.dhizuku_warning_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        ModuleSettings.setDhizukuEnabled(true)
+                        dhizukuEnabled = true
+                        showDhizukuDialog = false
+                    }
+                ) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDhizukuDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = MaterialTheme.shapes.extraLarge
+        )
+    }
+
     if (showModuleModeDialog) {
         val moduleModes = listOf(
             ModuleSettings.AccessMode.SAFE,
@@ -825,74 +909,7 @@ fun SettingsScreen() {
         )
     }
 
-    if (showApiKeyDialog) {
-        var tempKey by remember { mutableStateOf(computApiKey) }
-        var keyVisible by remember { mutableStateOf(false) }
-        AlertDialog(
-            onDismissRequest = { showApiKeyDialog = false },
-            title = { Text(stringResource(R.string.comput_ai_api_key_title)) },
-            text = {
-                OutlinedTextField(
-                    value = tempKey,
-                    onValueChange = { tempKey = it },
-                    label = { Text(stringResource(R.string.comput_api_key_label)) },
-                    placeholder = { Text("AQ.Ab8...") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    visualTransformation = if (keyVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        val image = if (keyVisible) R.drawable.ic_close_24 else R.drawable.ic_outline_info_24
-                        androidx.compose.material3.IconButton(onClick = { keyVisible = !keyVisible }) {
-                            moe.shizuku.manager.ui.compose.ShizukuIcon(
-                                icon = image,
-                                contentDescription = if (keyVisible) stringResource(R.string.comput_hide_api_key) else stringResource(R.string.comput_show_api_key)
-                            )
-                        }
-                    }
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        ModuleSettings.setComputApiKey(tempKey)
-                        computApiKey = tempKey
-                        showApiKeyDialog = false
-                    }
-                ) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showApiKeyDialog = false }) {
-                    Text(stringResource(android.R.string.cancel))
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            shape = MaterialTheme.shapes.extraLarge
-        )
-    }
-
-    if (showGeminiModelDialog) {
-        val modelOptions = listOf("gemini-3.6-flash", "gemini-3.5-flash-lite")
-        ChoiceDialog(
-            title = stringResource(R.string.comput_gemini_model_title),
-            choices = modelOptions.map {
-                ChoiceOption(
-                    title = it,
-                    summary = if (it == "gemini-3.6-flash") stringResource(R.string.comput_gemini_model_performance) else stringResource(R.string.comput_gemini_model_lightweight),
-                    icon = R.drawable.ic_outline_info_24
-                )
-            },
-            selectedIndex = modelOptions.indexOf(computGeminiModel),
-            onDismiss = { showGeminiModelDialog = false },
-            onSelect = { index ->
-                val selected = modelOptions[index]
-                ModuleSettings.setComputGeminiModel(selected)
-                computGeminiModel = selected
-                showGeminiModelDialog = false
-            }
-        )
-    }
+    // AI Provider manager - early-returned at the top of this composable.
 
     if (showMissingPermissionDialog) {
         val serviceRunning = Shizuku.pingBinder()
@@ -907,19 +924,7 @@ fun SettingsScreen() {
                     } else {
                         Text(stringResource(R.string.settings_start_on_boot_adb_grant_failed))
                         Spacer(Modifier.height(12.dp))
-                        Surface(
-                            color = MaterialTheme.colorScheme.surfaceVariant,
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = grantCommand,
-                                fontFamily = FontFamily.Monospace,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .horizontalScroll(rememberScrollState())
-                                    .padding(12.dp)
-                            )
-                        }
+                        MonospaceLog(text = grantCommand)
                         Spacer(Modifier.height(8.dp))
                         Text(
                             text = stringResource(R.string.settings_start_on_boot_adb_missing_permission_instruction),
@@ -959,17 +964,6 @@ fun SettingsScreen() {
             shape = MaterialTheme.shapes.extraLarge
         )
     }
-}
-
-@Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 4.dp),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        fontWeight = FontWeight.SemiBold
-    )
 }
 
 private data class LocaleOption(

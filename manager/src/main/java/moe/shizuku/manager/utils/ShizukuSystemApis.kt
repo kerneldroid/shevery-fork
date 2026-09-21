@@ -3,7 +3,6 @@ package moe.shizuku.manager.utils
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.content.pm.ParceledListSlice
 import android.os.IBinder
 import android.os.RemoteException
 import android.os.ServiceManager

@@ -21,8 +21,6 @@ class AdbMdns(
 ) {
 
     @Volatile
-    private var registered = false
-    @Volatile
     private var running = false
     @Volatile
     private var serviceName: String? = null
@@ -61,14 +59,6 @@ class AdbMdns(
         } catch (e: Exception) {
             Log.w(TAG, "Failed to stop service discovery: ${e.message}")
         }
-    }
-
-    private fun onDiscoveryStart() {
-        registered = true
-    }
-
-    private fun onDiscoveryStop() {
-        registered = false
     }
 
     private fun onServiceFound(info: NsdServiceInfo) {
@@ -166,8 +156,6 @@ class AdbMdns(
     internal class DiscoveryListener(private val adbMdns: AdbMdns) : NsdManager.DiscoveryListener {
         override fun onDiscoveryStarted(serviceType: String) {
             Log.v(TAG, "onDiscoveryStarted: $serviceType")
-
-            adbMdns.onDiscoveryStart()
         }
 
         override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
@@ -176,8 +164,6 @@ class AdbMdns(
 
         override fun onDiscoveryStopped(serviceType: String) {
             Log.v(TAG, "onDiscoveryStopped: $serviceType")
-
-            adbMdns.onDiscoveryStop()
         }
 
         override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {

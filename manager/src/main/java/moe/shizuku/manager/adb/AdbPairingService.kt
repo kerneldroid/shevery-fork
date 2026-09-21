@@ -29,7 +29,6 @@ class AdbPairingService : Service() {
         private const val notificationId = 1
         private const val replyRequestId = 1
         private const val stopRequestId = 2
-        private const val retryRequestId = 3
         private const val startAction = "start"
         private const val stopAction = "stop"
         private const val replyAction = "reply"
@@ -211,11 +210,6 @@ class AdbPairingService : Service() {
                 .setSmallIcon(R.drawable.ic_system_icon)
                 .setContentTitle(title)
                 .setContentText(text)
-                /*.apply {
-                    if (!success) {
-                        addAction(retryNotificationAction)
-                    }
-                }*/
                 .build()
         )
         stopSelf()
@@ -235,25 +229,6 @@ class AdbPairingService : Service() {
         Notification.Action.Builder(
             null,
             getString(R.string.notification_adb_pairing_stop_searching),
-            pendingIntent
-        )
-            .build()
-    }
-
-    private val retryNotificationAction by unsafeLazy {
-        val pendingIntent = PendingIntent.getService(
-            this,
-            retryRequestId,
-            startIntent(this),
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                PendingIntent.FLAG_IMMUTABLE
-            else
-                0
-        )
-
-        Notification.Action.Builder(
-            null,
-            getString(R.string.notification_adb_pairing_retry),
             pendingIntent
         )
             .build()

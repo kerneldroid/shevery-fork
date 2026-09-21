@@ -329,7 +329,7 @@ class UpdateChecker private constructor() {
         return numericPart.toLongOrNull()
     }
 
-    fun getRateLimit(): RateLimitTracker = rateLimit
+
 
     @Serializable
     private data class UpdateJsonResponse(

@@ -1,9 +1,11 @@
 package moe.shizuku.manager.app;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.os.Build;
 
 import androidx.annotation.StyleRes;
+import androidx.appcompat.app.AppCompatDelegate;
 
 import moe.shizuku.manager.R;
 import moe.shizuku.manager.ShizukuSettings;
@@ -45,5 +47,29 @@ public class ThemeHelper {
             default:
                 return R.style.ThemeOverlay;
         }
+    }
+
+    /**
+     * Single source of truth for "is the app dark right now", shared by the
+     * activity system bars (AppActivity) and the Compose content
+     * (ShizukuExpressiveTheme). An explicit Light/Dark choice always wins;
+     * Follow System reads the caller context's *resolved* configuration --
+     * i.e. what AppCompat actually applied -- so bars and content agree by
+     * construction.
+     *
+     * Deliberately NOT UiModeManager and NOT Resources.getSystem(): on phones
+     * UiModeManager.getNightMode() reports car-dock state (almost always NO),
+     * and the system config is the input to AppCompat, not its output.
+     * Value 3 (legacy "follow" constant once shipped in night_mode_value) is
+     * normalized to FOLLOW_SYSTEM so devices that stored it keep working.
+     */
+    public static boolean resolveAppDark(Context context) {
+        int nightMode = ShizukuSettings.getNightMode();
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_YES) return true;
+        if (nightMode == AppCompatDelegate.MODE_NIGHT_NO) return false;
+        if (nightMode == 3) nightMode = AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
+        Configuration config = context.getResources().getConfiguration();
+        return (config.uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
     }
 }

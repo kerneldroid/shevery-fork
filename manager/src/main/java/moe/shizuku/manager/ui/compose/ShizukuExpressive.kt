@@ -22,16 +22,14 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
+
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
@@ -44,12 +42,12 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -66,14 +64,12 @@ import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeveloperMode
-import androidx.compose.material.icons.rounded.HelpOutline
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.LooksOne
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.LightMode
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.NotificationsActive
-import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.School
@@ -82,12 +78,11 @@ import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Wifi
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
+
 import androidx.compose.material3.FloatingToolbarDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
@@ -95,10 +90,16 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalRippleConfiguration
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MotionScheme
-import androidx.compose.material3.OutlinedButton
+
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -144,14 +145,6 @@ import androidx.compose.ui.unit.dp
 import androidx.core.text.HtmlCompat
 import moe.shizuku.manager.R
 import moe.shizuku.manager.app.ThemeHelper
-
-data class ExpressiveButtonSpec(
-    @param:StringRes val label: Int,
-    @param:DrawableRes val icon: Int,
-    val primary: Boolean = false,
-    val enabled: Boolean = true,
-    val onClick: () -> Unit
-)
 
 val LocalFloatingNavBarVisible = compositionLocalOf<MutableState<Boolean>> {
     mutableStateOf(true)
@@ -225,6 +218,7 @@ fun ExpressiveFloatingNavigationBar(
                         onCheckedChange = { if (!selected) onItemSelected(index) },
                         modifier = Modifier
                             .height(56.dp)
+                            .semantics { this.selected = selected; role = Role.Tab }
                             .onGloballyPositioned { coords ->
                                 buttonBounds[index] = coords.boundsInParent()
                             }
@@ -291,7 +285,9 @@ fun ExpressiveFloatingNavigationBar(
 @Composable
 fun ShizukuExpressiveTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val dark = isSystemInDarkTheme()
+    // Same detector as the activity system bars (ThemeHelper.resolveAppDark):
+    // one source of truth, so bars and content can never disagree after a switch.
+    val dark = remember { ThemeHelper.resolveAppDark(context) }
     val baseScheme = when {
         ThemeHelper.isUsingSystemColor() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dark ->
             dynamicDarkColorScheme(context)
@@ -393,6 +389,7 @@ fun ShizukuLazyScaffold(
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(10.dp),
     isRefreshing: Boolean = false,
     onRefresh: (() -> Unit)? = null,
+    listState: LazyListState = rememberLazyListState(),
     content: LazyListScope.() -> Unit
 ) {
     ShizukuScaffold(
@@ -406,6 +403,7 @@ fun ShizukuLazyScaffold(
         val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues()
         val list = @Composable {
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
@@ -437,7 +435,10 @@ fun ShizukuLazyScaffold(
                     isRefreshing = isRefreshing,
                     modifier = Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 8.dp)
+                        // The expressive Scaffold lays content out edge-to-edge from the window
+                        // top, so without the top bar padding the indicator used to hover over
+                        // the toolbar/status bar. Keep it centered below the app bar (tab line).
+                        .padding(top = innerPadding.calculateTopPadding() + 12.dp)
                 )
             }
         } else {
@@ -518,47 +519,6 @@ fun ExpressiveCard(
 }
 
 @Composable
-fun ExpressiveButtons(buttons: List<ExpressiveButtonSpec>) {
-    if (buttons.isEmpty()) return
-
-    Spacer(Modifier.height(8.dp))
-    FlowRow(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        buttons.forEach { button ->
-            if (button.primary) {
-                Button(
-                    enabled = button.enabled,
-                    onClick = button.onClick,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    ButtonIcon(button.icon)
-                    Text(stringResource(button.label))
-                }
-            } else if (button.enabled) {
-                FilledTonalButton(
-                    onClick = button.onClick,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    ButtonIcon(button.icon)
-                    Text(stringResource(button.label))
-                }
-            } else {
-                OutlinedButton(
-                    enabled = false,
-                    onClick = button.onClick,
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 10.dp)
-                ) {
-                    ButtonIcon(button.icon)
-                    Text(stringResource(button.label))
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun SettingsGroup(
     title: String,
     content: @Composable () -> Unit
@@ -601,6 +561,7 @@ fun SettingsRow(
     title: String,
     modifier: Modifier = Modifier,
     summary: String? = null,
+    stateDescription: String? = null,
     enabled: Boolean = true,
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
@@ -611,11 +572,12 @@ fun SettingsRow(
         Modifier
     }
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(clickableModifier)
-            .alpha(if (enabled) 1f else 0.56f)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
+            modifier = modifier
+                .fillMaxWidth()
+                .then(clickableModifier)
+                .semantics(mergeDescendants = true) { stateDescription?.let { this.stateDescription = it } } // AFTER clickable, so the merged node wraps the click action too
+                .alpha(if (enabled) 1f else  0.56f)
+                .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -664,14 +626,17 @@ fun SwitchSettingsRow(
         title = title,
         modifier = modifier,
         summary = summary,
+        stateDescription = if (checked) "On" else "Off",
         enabled = enabled,
         onClick = { if (enabled) onCheckedChange(!checked) },
         trailing = {
-            ExpressiveSwitch(
-                checked = checked,
-                enabled = enabled,
-                onCheckedChange = onCheckedChange
-            )
+            Box(modifier = Modifier.clearAndSetSemantics {}) {
+                ExpressiveSwitch(
+                    checked = checked,
+                    enabled = enabled,
+                    onCheckedChange = null // Row's clickable handles the toggle; hide the switch's own node so it doesn't fight the merged row
+                )
+            }
         }
     )
 }
@@ -755,17 +720,6 @@ fun HtmlText(@StringRes id: Int, vararg formatArgs: Any): String {
 
 fun htmlToPlainText(value: String): String {
     return HtmlCompat.fromHtml(value, HtmlCompat.FROM_HTML_MODE_LEGACY).toString().trim()
-}
-
-@Composable
-private fun ButtonIcon(@DrawableRes icon: Int) {
-    ShizukuIcon(
-        icon = icon,
-        contentDescription = null,
-        modifier = Modifier
-            .padding(end = 8.dp)
-            .size(18.dp)
-    )
 }
 
 @Composable

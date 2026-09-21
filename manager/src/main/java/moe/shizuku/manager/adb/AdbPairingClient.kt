@@ -131,7 +131,7 @@ private class PairingContext private constructor(private val nativePtr: Long) {
         msg = nativeMsg(nativePtr)
     }
 
-    fun initCipher(theirMsg: ByteArray) = nativeInitCipher(nativePtr, theirMsg)
+    internal fun initCipher(theirMsg: ByteArray) = nativeInitCipher(nativePtr, theirMsg)
 
     fun encrypt(`in`: ByteArray) = nativeEncrypt(nativePtr, `in`)
 

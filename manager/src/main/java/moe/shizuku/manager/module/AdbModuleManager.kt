@@ -32,7 +32,7 @@ object AdbModuleManager {
     private val idRegex = Regex("[A-Za-z][A-Za-z0-9._-]{1,63}")
     private val installMutexes = ConcurrentHashMap<String, Mutex>()
 
-    fun cleanupStagingDirs(context: Context) {
+    internal fun cleanupStagingDirs(context: Context) {
         modulesRoot(context).listFiles { file ->
             file.isDirectory && file.name.startsWith(".") && file.name.endsWith(".installing")
         }?.forEach { it.deleteRecursively() }
@@ -169,7 +169,10 @@ object AdbModuleManager {
         servicesStartedForBinder = false
     }
 
-    private fun runModuleScript(module: AdbModule, script: File, logFile: File): ModuleActionResult {
+    private fun runModuleScript(module: AdbModule, script: File, logFile: File): ModuleActionResult =
+        runModuleScriptStreaming(module, script, logFile, live = false)
+
+    private fun runModuleScriptStreaming(module: AdbModule, script: File, logFile: File, live: Boolean = false): ModuleActionResult {
         check(module.enabled) { "Module is disabled." }
         module.logsDir.mkdirs()
 
@@ -183,85 +186,14 @@ object AdbModuleManager {
             return ModuleActionResult(exitCode = -1, stdout = "", stderr = "Cannot read script: ${e.message}")
         }
 
-        val binder = Shizuku.getBinder() ?: error("Shizuku service is not running.")
-        val service = IShizukuService.Stub.asInterface(binder)
-        val binDir = ensureSuShim(moe.shizuku.manager.application)
-        val env = arrayOf(
-            "MODDIR=${module.directory.absolutePath}",
-            "ASH_STANDALONE=1",
-            "SHIZUKU_MODULE_ID=${module.id}",
-            "SHIZUKU_MODULE_MODE=${ModuleSettings.getAccessMode().value}",
-            "SHIZUKU_MODULE_TRUSTED=${if (ModuleSettings.isModuleTrusted(module.id)) "1" else "0"}",
-            "SHIZUKU_MODULE_BACKGROUND=${if (ModuleSettings.canRunBackground(module)) "1" else "0"}",
-            "AXERON=true",
-            "AXERONVER=1.0.0",
-            "MODPATH=${module.directory.absolutePath}",
-            "ARCH=${android.os.Build.SUPPORTED_ABIS.firstOrNull() ?: "arm64-v8a"}",
-            "PATH=${binDir.absolutePath}:/product/bin:/apex/com.android.runtime/bin:/apex/com.android.art/bin:/system_ext/bin:/system/bin:/system/xbin:/odm/bin:/vendor/bin:/vendor/xbin:/sbin:/data/adb/apatch:/data/adb/ksu/bin"
-        )
-        val remote = service.newProcess(
-            arrayOf("sh", "-c", scriptContent),
-            env,
-            "/data/local/tmp"
-        )
-
-        ParcelFileDescriptor.AutoCloseOutputStream(remote.getOutputStream()).close()
-        val stdoutPfd = remote.getInputStream()
-        val stderrPfd = remote.getErrorStream()
-        var stdout = ""
-        var stderr = ""
-        val stdoutThread = Thread {
-            try {
-                stdout = readStreamTail(ParcelFileDescriptor.AutoCloseInputStream(stdoutPfd))
-            } catch (ignore: Exception) { }
+        if (live) {
+            _liveOutput.value = LiveModuleOutput(
+                moduleId = module.id,
+                moduleName = module.name,
+                text = "Starting ${script.name}...\n",
+                running = true
+            )
         }
-        val stderrThread = Thread {
-            try {
-                stderr = readStreamTail(ParcelFileDescriptor.AutoCloseInputStream(stderrPfd))
-            } catch (ignore: Exception) { }
-        }
-        stdoutThread.start()
-        stderrThread.start()
-        val finished = remote.waitForTimeout(MAX_SCRIPT_SECONDS, TimeUnit.SECONDS.name)
-        val exitCode = if (finished) {
-            remote.exitValue()
-        } else {
-            remote.destroy()
-            try { stdoutPfd.close() } catch (ignore: Exception) {}
-            try { stderrPfd.close() } catch (ignore: Exception) {}
-            124
-        }
-        stdoutThread.join(1000)
-        stderrThread.join(1000)
-        val result = ModuleActionResult(
-            exitCode = exitCode,
-            stdout = stdout.takeLast(MAX_OUTPUT_CHARS),
-            stderr = stderr.takeLast(MAX_OUTPUT_CHARS)
-        )
-        writeLastLog(logFile, module, script, result, finished)
-        return result
-    }
-
-    private fun runModuleScriptStreaming(module: AdbModule, script: File, logFile: File): ModuleActionResult {
-        check(module.enabled) { "Module is disabled." }
-        module.logsDir.mkdirs()
-
-        if (script.length() > MAX_SCRIPT_BYTES) {
-            return ModuleActionResult(exitCode = -1, stdout = "", stderr = "Script too large: ${script.length()} bytes (max $MAX_SCRIPT_BYTES)")
-        }
-
-        val scriptContent = try {
-            script.readText(Charsets.UTF_8)
-        } catch (e: Exception) {
-            return ModuleActionResult(exitCode = -1, stdout = "", stderr = "Cannot read script: ${e.message}")
-        }
-
-        _liveOutput.value = LiveModuleOutput(
-            moduleId = module.id,
-            moduleName = module.name,
-            text = "Starting ${script.name}...\n",
-            running = true
-        )
 
         val binder = Shizuku.getBinder() ?: error("Shizuku service is not running.")
         val service = IShizukuService.Stub.asInterface(binder)
@@ -293,24 +225,28 @@ object AdbModuleManager {
         var stderr = ""
         val stdoutThread = Thread {
             try {
-                val reader = ParcelFileDescriptor.AutoCloseInputStream(stdoutPfd).bufferedReader(Charsets.UTF_8)
-                reader.use { r ->
-                    val buffer = CharArray(1024)
-                    while (true) {
-                        val read = r.read(buffer)
-                        if (read <= 0) break
-                        val chunk = String(buffer, 0, read)
-                        synchronized(streamingBuffer) {
-                            streamingBuffer.append(chunk)
-                            stdout = streamingBuffer.toString()
+                if (live) {
+                    val reader = ParcelFileDescriptor.AutoCloseInputStream(stdoutPfd).bufferedReader(Charsets.UTF_8)
+                    reader.use { r ->
+                        val buffer = CharArray(1024)
+                        while (true) {
+                            val read = r.read(buffer)
+                            if (read <= 0) break
+                            val chunk = String(buffer, 0, read)
+                            synchronized(streamingBuffer) {
+                                streamingBuffer.append(chunk)
+                                stdout = streamingBuffer.toString()
+                            }
+                            _liveOutput.value = LiveModuleOutput(
+                                moduleId = module.id,
+                                moduleName = module.name,
+                                text = streamingBuffer.toString().takeLast(MAX_OUTPUT_CHARS),
+                                running = true
+                            )
                         }
-                        _liveOutput.value = LiveModuleOutput(
-                            moduleId = module.id,
-                            moduleName = module.name,
-                            text = streamingBuffer.toString().takeLast(MAX_OUTPUT_CHARS),
-                            running = true
-                        )
                     }
+                } else {
+                    stdout = readStreamTail(ParcelFileDescriptor.AutoCloseInputStream(stdoutPfd))
                 }
             } catch (ignore: Exception) { }
         }
@@ -319,7 +255,6 @@ object AdbModuleManager {
                 stderr = readStreamTail(ParcelFileDescriptor.AutoCloseInputStream(stderrPfd))
             } catch (ignore: Exception) { }
         }
-
         stdoutThread.start()
         stderrThread.start()
         val finished = remote.waitForTimeout(MAX_SCRIPT_SECONDS, TimeUnit.SECONDS.name)
@@ -334,13 +269,15 @@ object AdbModuleManager {
         stdoutThread.join(1000)
         stderrThread.join(1000)
 
-        val finalOutput = synchronized(streamingBuffer) { streamingBuffer.toString() }
-        _liveOutput.value = LiveModuleOutput(
-            moduleId = module.id,
-            moduleName = module.name,
-            text = finalOutput.takeLast(MAX_OUTPUT_CHARS) + "\n\n--- Exit code: $exitCode ---",
-            running = false
-        )
+        val finalOutput = if (live) synchronized(streamingBuffer) { streamingBuffer.toString() } else stdout
+        if (live) {
+            _liveOutput.value = LiveModuleOutput(
+                moduleId = module.id,
+                moduleName = module.name,
+                text = finalOutput.takeLast(MAX_OUTPUT_CHARS) + "\n\n--- Exit code: $exitCode ---",
+                running = false
+            )
+        }
 
         val result = ModuleActionResult(
             exitCode = exitCode,

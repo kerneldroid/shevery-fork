@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import java.io.IOException
-import java.time.Duration
+
 import java.util.concurrent.TimeUnit
 
 class SheveryUpdateCheckWorker(
@@ -50,6 +50,10 @@ class SheveryUpdateCheckWorker(
                     url = result.downloadUrl ?: "",
                     detectedAt = now
                 )
+            } else {
+                // On latest (or no release): drop any stale pending update so the home card
+                // does not keep advertising an old version after a newer one landed or was installed.
+                moe.shizuku.manager.module.ModuleSettings.clearPendingUpdate()
             }
             Result.success()
         } catch (e: IOException) {

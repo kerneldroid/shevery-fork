@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,12 +18,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Clear
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -486,6 +490,10 @@ private fun AppPermissionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = { toggle() })
+            .semantics(mergeDescendants = true) {
+                this.stateDescription = if (granted) "Allowed" else "Denied"
+            }
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -533,10 +541,12 @@ private fun AppPermissionRow(
                 }
             }
         }
-        ExpressiveSwitch(
-            checked = granted,
-            onCheckedChange = { toggle() }
-        )
+        Box(modifier = Modifier.clearAndSetSemantics {}) {
+            ExpressiveSwitch(
+                checked = granted,
+                onCheckedChange = null
+            )
+        }
     }
 }
 

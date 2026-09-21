@@ -48,7 +48,7 @@ class SheveryUpdateChecker private constructor() {
 
         try {
             val url = "https://api.github.com/repos/$REPO_OWNER/$REPO_NAME/releases"
-            val request = buildRequest(url, githubPat)
+            val request = buildGitHubRequest(url, githubPat)
             val response = client.newCall(request).execute()
 
             response.use { resp ->
@@ -82,10 +82,16 @@ class SheveryUpdateChecker private constructor() {
                 )
 
                 val releases = json.decodeFromString<List<GitHubRelease>>(body)
+                // GitHub orders /releases by created_at, not published_at, so a
+                // release drafted early but published late (e.g. r37: drafted
+                // Aug 21, published Sep 13) lands below older stables and is
+                // skipped by firstOrNull. Pick the newest by published_at instead.
                 val targetRelease = when (channel) {
-                    ModuleSettings.AppUpdateChannel.STABLE -> releases.firstOrNull { !it.prerelease && !it.draft }
-                    ModuleSettings.AppUpdateChannel.BETA_PRE_RELEASE -> releases.firstOrNull { !it.draft }
-                } ?: releases.firstOrNull { !it.draft }
+                    ModuleSettings.AppUpdateChannel.STABLE -> releases.filter { !it.prerelease && !it.draft }
+                        .maxByOrNull { it.publishedAt ?: "" }
+                    ModuleSettings.AppUpdateChannel.BETA_PRE_RELEASE -> releases.filter { !it.draft }
+                        .maxByOrNull { it.publishedAt ?: "" }
+                } ?: releases.filter { !it.draft }.maxByOrNull { it.publishedAt ?: "" }
 
                 if (targetRelease == null) {
                     return@withContext SheveryAppUpdateResult(
@@ -168,19 +174,6 @@ class SheveryUpdateChecker private constructor() {
         return rMatch?.groupValues?.get(1)?.toIntOrNull()
     }
 
-    private fun buildRequest(url: String, githubPat: String?): Request {
-        val builder = Request.Builder()
-            .url(url)
-            .header("Accept", "application/vnd.github+json")
-            .header("X-GitHub-Api-Version", "2022-11-28")
-
-        if (!githubPat.isNullOrBlank()) {
-            builder.header("Authorization", "Bearer $githubPat")
-        }
-
-        return builder.build()
-    }
-
     companion object {
         private const val TAG = "SheveryUpdateChecker"
         private const val REPO_OWNER = "HmnDev-Tech"
@@ -195,6 +188,20 @@ class SheveryUpdateChecker private constructor() {
                     instance = it
                 }
             }
+        }
+
+        /**
+         * True when [releaseTag] (e.g. "r35") is newer than the installed build.
+         * Used to suppress stale stored pendings: a banner saved before an update
+         * must not keep advertising the old version after a newer build is installed.
+         */
+        fun isTagNewerThanInstalled(releaseTag: String?): Boolean {
+            if (releaseTag.isNullOrBlank()) return false
+            return getInstance().isReleaseNewer(
+                releaseTag,
+                BuildConfig.VERSION_NAME,
+                BuildConfig.VERSION_CODE
+            )
         }
     }
 }

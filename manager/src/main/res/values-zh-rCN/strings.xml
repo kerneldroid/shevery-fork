@@ -55,7 +55,7 @@
     <string name="adb_pairing_tutorial_content_steps"><![CDATA[前往“开发者选项” - “无线调试”。点击“使用配对码配对设备”，您将看到一个六位数配对码。]]></string>
     <string name="adb_pairing_tutorial_content_enter_pairing_code"><![CDATA[在通知栏中输入配对码以完成配对。]]></string>
     <string name="adb_pairing_tutorial_content_notification_blocked"><![CDATA[配对过程需要与 Shevery 通知进行交互。请允许 Shevery 发送通知。]]></string>
-        <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[否则，您可能无法在通知中输入配对码。]]></string>
+    <string name="adb_pairing_tutorial_content_miui_2"><![CDATA[否则，您可能无法在通知中输入配对码。]]></string>
     <string name="adb_pairing_tutorial_content_left_is_clickable"><![CDATA[请注意，“无线调试”选项左侧文字区域可点击进入新页面。仅开启右侧开关是不够的。]]></string>
     <string name="adb_pairing_tutorial_content_finish"><![CDATA[返回 Shevery 并启动服务。]]></string>
     <string name="adb_pairing_tutorial_content_network"><![CDATA[Shevery 需要访问本地网络。]]></string>
@@ -66,6 +66,9 @@
     <string name="home_root_button_start"><![CDATA[启动]]></string>
     <string name="home_root_button_restart"><![CDATA[重新启动]]></string>
     <string name="home_app_management_title"><![CDATA[应用管理]]></string>
+    <plurals name="home_app_management_authorized_apps_count">
+        <item quantity="other"><![CDATA[已授权 %d 个应用]]></item>
+    </plurals>
     <string name="home_app_management_view_authorized_apps"><![CDATA[点击管理已授权的应用]]></string>
     <string name="home_app_management_empty"><![CDATA[请求或声明使用 Shevery 的应用将在此处显示。]]></string>
     <string name="home_learn_more_title"><![CDATA[了解 Shevery]]></string>
@@ -91,6 +94,14 @@
     <string name="app_management_dialog_adb_is_limited_message"><![CDATA[您的设备厂商很有可能限制了 ADB 权限。<p>您可以在<b><a href="%1$s">此文档</a></b>中找到针对您系统的解决方案。]]></string>
     <string name="app_management_item_summary_requires_root"><![CDATA[* 需要 Shevery 以 Root 方式运行]]></string>
     <string name="app_management_loading"><![CDATA[正在加载应用…]]></string>
+    <string name="app_management_search_hint"><![CDATA[搜索应用…]]></string>
+    <string name="app_management_clear_search"><![CDATA[清除搜索]]></string>
+    <string name="app_management_filter_all"><![CDATA[全部 (%1$d)]]></string>
+    <string name="app_management_filter_allowed"><![CDATA[已允许 (%1$d)]]></string>
+    <string name="app_management_filter_denied"><![CDATA[已拒绝 (%1$d)]]></string>
+    <string name="app_management_no_search_results"><![CDATA[没有匹配的应用]]></string>
+    <string name="app_management_no_search_results_desc"><![CDATA[请检查拼写或重置筛选条件。]]></string>
+    <string name="app_management_clear_filters"><![CDATA[重置筛选]]></string>
     <string name="home_terminal_title"><![CDATA[在终端应用中使用 Shevery]]></string>
     <string name="home_terminal_description"><![CDATA[在您喜爱的终端应用中通过 Shevery 执行命令]]></string>
     <string name="terminal_tutorial_1"><![CDATA[首先，将文件导出到您选择的任何位置。您将找到两个文件：%1$s 和 %2$s。]]></string>
@@ -112,7 +123,7 @@
     <string name="settings_translation_contributors"><![CDATA[翻译贡献者]]></string>
     <string name="settings_translation"><![CDATA[参与翻译]]></string>
     <string name="settings_translation_summary"><![CDATA[帮助我们将 %s 翻译为您的语言]]></string>
-    <string name="settings_start_on_boot"><![CDATA[开机自启]]></string>
+    <string name="settings_start_on_boot"><![CDATA[通过 Root 开机自启]]></string>
     <string name="settings_start_on_boot_summary"><![CDATA[成功运行后，Shevery 可在设备开机时自动启动]]></string>
     <string name="settings_start_on_boot_adb"><![CDATA[通过无线调试开机自启]]></string>
     <string name="settings_start_on_boot_adb_summary"><![CDATA[开机时短暂开启无线调试并通过 ADB 启动 Shevery（TCP 端口 5555）。无需 Root，仅需短暂连接 Wi-Fi]]></string>
@@ -150,7 +161,7 @@
     <string name="modules_permission_web_bridge_summary"><![CDATA[仅在本地 WebUI 且 WebView 网络禁用时暴露 window.Shevery。]]></string>
     <string name="modules_permission_web_network"><![CDATA[WebView 网络]]></string>
     <string name="modules_permission_web_network_summary"><![CDATA[允许 HTTPS 导航和资源加载。这将禁用该 WebView 的 Shell 桥接。]]></string>
-    <string name="modules_permission_web_download"><![CDATA[WebUI下载()]]></string>
+    <string name="modules_permission_web_download"><![CDATA[WebUI download()]]></string>
     <string name="modules_permission_web_download_summary"><![CDATA[允许将 HTTPS 文件下载到 WebUI 目录（index.html 除外）。]]></string>
     <string name="modules_background_actions"><![CDATA[允许后台操作]]></string>
     <string name="modules_background_actions_summary"><![CDATA[允许已安装的模块在完全访问模式下请求后台 ADB 任务]]></string>
@@ -168,10 +179,10 @@
     <string name="modules_full_trust"><![CDATA[完全信任]]></string>
     <string name="modules_trust"><![CDATA[信任]]></string>
     <string name="modules_untrust"><![CDATA[取消信任]]></string>
-    <string name="modules_run_action"><![CDATA[行动]]></string>
-    <string name="modules_run_service"><![CDATA[服务]]></string>
+    <string name="modules_run_action"><![CDATA[Action]]></string>
+    <string name="modules_run_service"><![CDATA[Service]]></string>
     <string name="modules_running"><![CDATA[正在运行模块脚本…]]></string>
-    <string name="modules_open_webui"><![CDATA[网页用户界面]]></string>
+    <string name="modules_open_webui"><![CDATA[WebUI]]></string>
     <string name="modules_webui"><![CDATA[模块 WebUI]]></string>
     <string name="modules_delete"><![CDATA[删除]]></string>
     <string name="modules_delete_title"><![CDATA[删除模块？]]></string>
@@ -180,7 +191,7 @@
     <string name="modules_action_failed"><![CDATA[Action 执行失败]]></string>
     <string name="modules_service_result"><![CDATA[Service 已完成：退出码 %d]]></string>
     <string name="modules_service_failed"><![CDATA[Service 执行失败]]></string>
-    <string name="modules_recommand_title"><![CDATA[重新命令]]></string>
+    <string name="modules_recommand_title"><![CDATA[ReCommand]]></string>
     <string name="modules_recommand_source">%1$s / %2$s</string>
     <string name="modules_recommand_expand"><![CDATA[展开]]></string>
     <string name="modules_recommand_collapse"><![CDATA[折叠]]></string>
@@ -236,9 +247,9 @@
     <string name="notification_adb_pairing_succeed_text"><![CDATA[您现在可以启动 Shevery 服务。]]></string>
     <string name="notification_adb_pairing_failed_title"><![CDATA[配对失败]]></string>
     <string name="notification_adb_pairing_retry"><![CDATA[重试]]></string>
-    <string name="permission_label"><![CDATA[Shevery 访问权限]]></string>
+    <string name="permission_label"><![CDATA[使用 Shevery]]></string>
     <string name="permission_description"><![CDATA[允许应用使用 Shevery。]]></string>
-    <string name="permission_warning_template"><![CDATA[允许 <b>%1$s</b> 获得 %2$s 权限？]]></string>
+    <string name="permission_warning_template"><![CDATA[要允许 <b>%1$s</b> %2$s 吗？]]></string>
     <string name="grant_dialog_button_allow_always"><![CDATA[总是允许]]></string>
     <string name="grant_dialog_button_deny"><![CDATA[拒绝]]></string>
     <string name="starter"><![CDATA[启动器]]></string>
@@ -274,7 +285,7 @@
     <string name="settings_application"><![CDATA[应用]]></string>
     <string name="settings_appearance"><![CDATA[外观]]></string>
     <string name="lab_service_behavior_title"><![CDATA[服务行为]]></string>
-    <string name="lab_keep_alive_title"><![CDATA[保持服务保活]]></string>
+    <string name="lab_keep_alive_title"><![CDATA[保持服务运行]]></string>
     <string name="lab_keep_alive_summary"><![CDATA[定期检查 Shevery 服务运行状态并在需要时重启]]></string>
     <string name="lab_auto_restart_title"><![CDATA[崩溃后自动重启]]></string>
     <string name="lab_auto_restart_summary"><![CDATA[在 Shevery 服务意外终止时尝试自动重启]]></string>
@@ -333,7 +344,7 @@
     <string name="update_settings_github_pat_set"><![CDATA[已设置令牌]]></string>
     <string name="update_settings_github_pat_unset"><![CDATA[未设置 (60 次请求/小时)]]></string>
     <string name="update_settings_github_pat_title"><![CDATA[GitHub 个人访问令牌]]></string>
-    <string name="update_settings_github_pat_description"><![CDATA[可选。设置 GitHub 令牌可将 API 限制提升至 5000 次/小时。]]></string>
+    <string name="update_settings_github_pat_description"><![CDATA[可选。GitHub 令牌可将 API 速率限制从 60 次/小时提升至 5000 次/小时。公开仓库仅需 public_repo 范围。]]></string>
     <string name="update_settings_github_pat_label"><![CDATA[令牌]]></string>
     <string name="update_settings_github_pat_show"><![CDATA[显示]]></string>
     <string name="update_settings_github_pat_hide"><![CDATA[隐藏]]></string>
@@ -345,7 +356,7 @@
     <string name="modules_catalog_empty"><![CDATA[未找到模块]]></string>
     <string name="modules_catalog_sort_newest"><![CDATA[最新]]></string>
     <string name="modules_catalog_sort_oldest"><![CDATA[最早]]></string>
-    <string name="modules_catalog_sort_stars"><![CDATA[标星]]></string>
+    <string name="modules_catalog_sort_stars"><![CDATA[星标]]></string>
     <string name="modules_catalog_sort_official"><![CDATA[官方]]></string>
     <string name="modules_catalog_install_sources"><![CDATA[从源码安装]]></string>
     <string name="modules_catalog_install_release"><![CDATA[下载 Release ZIP]]></string>
@@ -355,7 +366,7 @@
     <string name="modules_catalog_token_required"><![CDATA[需要 GitHub 令牌]]></string>
     <string name="modules_catalog_token_hint"><![CDATA[GitHub 个人访问令牌]]></string>
     <string name="modules_catalog_token_description"><![CDATA[在 GitHub 搜索模块需要令牌。您可以在 github.com/settings/tokens 创建。]]></string>
-    <string name="modules_catalog_token_format_warning"><![CDATA[令牌必须以 ghp_ 或 github_pat_ 开头]]></string>
+    <string name="modules_catalog_token_format_warning"><![CDATA[令牌必须以 ghp_ 或 github_pat_ 开头，且至少 30 个字符]]></string>
     <string name="modules_catalog_loading"><![CDATA[正在加载目录…]]></string>
     <string name="modules_catalog_error"><![CDATA[加载目录失败]]></string>
     <string name="modules_catalog_install"><![CDATA[安装]]></string>
@@ -367,7 +378,7 @@
     <string name="tv_status_disabled"><![CDATA[已禁用]]></string>
     <string name="tv_status_trusted"><![CDATA[受信任]]></string>
     <string name="wear_catalog_sort_newest"><![CDATA[最新]]></string>
-    <string name="wear_catalog_sort_stars"><![CDATA[标星]]></string>
+    <string name="wear_catalog_sort_stars"><![CDATA[星标]]></string>
     <string name="wear_catalog_sort_official"><![CDATA[官方]]></string>
     <string name="wear_catalog_sort_by"><![CDATA[排序方式]]></string>
     <string name="wear_catalog_filter"><![CDATA[筛选]]></string>
@@ -384,7 +395,7 @@
     <string name="comput_recommand_title"><![CDATA[Comput 确认弹窗]]></string>
     <string name="comput_recommand_summary"><![CDATA[在 Comput 控制台执行命令前显示二次确认弹窗]]></string>
     <string name="comput_recommand_confirmation"><![CDATA[确定要在 Comput 中执行此 ADB 命令吗？]]></string>
-    <string name="comput_ai_api_key_empty"><![CDATA[Google AI Studio API 密钥为空！请在 Shevery 设置中配置。]]></string>
+    <string name="comput_ai_api_key_empty"><![CDATA[Google AI Studio API 密钥为空！请在 Shevery 设置（Comput 控制台设置）中配置。]]></string>
     <string name="comput_ai_api_key_title"><![CDATA[Google AI Studio API 密钥]]></string>
     <string name="comput_ai_api_key_not_configured"><![CDATA[未配置（Gemini AI 将无法工作）]]></string>
     <string name="comput_gemini_model_title"><![CDATA[Gemini AI 模型]]></string>
@@ -414,7 +425,6 @@
 原命令：%1$s
 正在执行...]]></string>
     <string name="comput_command_no_output"><![CDATA[命令执行完成，无输出。]]></string>
-    <string name="comput_timed_out"><![CDATA[[E] 命令在 120 秒后超时。]]></string>
     <string name="comput_exit_code"><![CDATA[[E] 命令以退出码 %1$d 结束。]]></string>
     <string name="comput_running_macro"><![CDATA[正在运行宏：%1$s]]></string>
     <string name="comput_executing_cmd"><![CDATA[> 正在执行命令：%1$s]]></string>
@@ -423,7 +433,7 @@
     <string name="comput_console_initialized"><![CDATA[控制台已初始化。已连接到特权服务。
 就绪。]]></string>
     <string name="comput_ai_explanation"><![CDATA[AI 解释]]></string>
-    <string name="comput_commandium"><![CDATA[司令部]]></string>
+    <string name="comput_commandium"><![CDATA[Commandium]]></string>
     <string name="comput_commandium_assistant"><![CDATA[Commandium AI 助手]]></string>
     <string name="comput_commandium_description"><![CDATA[使用自然语言生成 Shell 命令，Gemini 将直接输出可复制的命令。]]></string>
     <string name="comput_commandium_label"><![CDATA[您需要什么命令？]]></string>
@@ -445,7 +455,7 @@
     <string name="comput_record_macro"><![CDATA[录制宏]]></string>
     <string name="comput_recording_active"><![CDATA[正在录制。从主输入框运行命令以将其添加到此宏中。]]></string>
     <string name="comput_saved_macros"><![CDATA[已保存的宏]]></string>
-        <string name="comput_delete"><![CDATA[删除]]></string>
+    <string name="comput_delete"><![CDATA[删除]]></string>
     <string name="comput_recommand_confirmation_title"><![CDATA[ReCommand 确认]]></string>
     <string name="comput_execute"><![CDATA[执行]]></string>
     <string name="comput_cancel"><![CDATA[取消]]></string>
@@ -455,7 +465,7 @@
     <string name="comput_save"><![CDATA[保存]]></string>
     <string name="comput_tab_terminal"><![CDATA[终端]]></string>
     <string name="comput_tab_commandium"><![CDATA[AI 工作室]]></string>
-    <string name="comput_tab_macros"><![CDATA[宏命令]]></string>
+    <string name="comput_tab_macros"><![CDATA[宏]]></string>
     <string name="comput_tab_presets"><![CDATA[预设]]></string>
     <string name="comput_quick_chips"><![CDATA[快捷操作]]></string>
     <string name="comput_terminal_header"><![CDATA[SHELL 输出]]></string>
@@ -528,10 +538,10 @@
     <string name="shevery_update_auto_check_summary"><![CDATA[即使应用关闭也会查找新版本]]></string>
     <string name="home_update_available_title"><![CDATA[Shevery 有可用更新: %s]]></string>
     <string name="home_update_available_body"><![CDATA[有新版本可用。点击下载。]]></string>
-    <string name="shevery_update_check_failed"><![CDATA[Aktualisierungsprüfung fehlgeschlagen: %s]]></string>
-    <string name="app_name"><![CDATA[谢弗里]]></string>
-    <string name="permission_group_label"><![CDATA[谢维里]]></string>
-    <string name="permission_group_description"><![CDATA[@字符串/权限标签]]></string>
+    <string name="shevery_update_check_failed"><![CDATA[检查更新失败：%s]]></string>
+    <string name="app_name"><![CDATA[Shevery]]></string>
+    <string name="permission_group_label"><![CDATA[Shevery]]></string>
+    <string name="permission_group_description"><![CDATA[@string/permission_label]]></string>
     <string name="starting_root_shell"><![CDATA[正在启动 root 终端……]]></string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[首次重启时需要连接 Wi-Fi，因为 Shevery 必须先连接到当前的无线调试端口，然后才能将 ADB 切换到 5555。]]></string>
     <string name="settings_update_group_title"><![CDATA[更新]]></string>
@@ -543,22 +553,24 @@
     <string name="shevery_update_available_msg"><![CDATA[版本 %1$s 已发布（当前版本：%2$s）]]></string>
     <string name="shevery_update_download_apk"><![CDATA[下载 APK]]></string>
     <string name="shevery_update_view_release"><![CDATA[在 GitHub 上查看]]></string>
+    <string name="shevery_update_download_install"><![CDATA[下载并安装]]></string>
+    <string name="shevery_update_downloading_title"><![CDATA[正在下载更新…]]></string>
+    <string name="shevery_update_download_progress"><![CDATA[已下载 %1$d%%]]></string>
+    <string name="shevery_update_preparing"><![CDATA[正在准备下载…]]></string>
+    <string name="shevery_update_installing"><![CDATA[正在安装更新…]]></string>
+    <string name="shevery_update_install_failed_title"><![CDATA[安装失败]]></string>
+    <string name="shevery_update_retry"><![CDATA[重试]]></string>
+    <string name="shevery_update_download_manual"><![CDATA[手动下载]]></string>
+    <string name="shevery_update_install_success"><![CDATA[更新已安装]]></string>
     <string name="shevery_update_channel"><![CDATA[更新频道]]></string>
     <string name="shevery_update_channel_summary"><![CDATA[选择更新发布通道]]></string>
     <string name="app_update_channel_stable"><![CDATA[稳定]]></string>
     <string name="app_update_channel_beta"><![CDATA[预发布版与测试版]]></string>
     <string name="shevery_update_group_title"><![CDATA[Shevery 应用更新]]></string>
     <string name="shevery_update_modules_group_title"><![CDATA[模块更新与目录]]></string>
-    <string name="adb_pairing_tutorial_content_miui">MIUI用户可能需要在系统设置的“通知”-“通知栏”中将通知样​​式切换为“Android”。</string>
+    <string name="adb_pairing_tutorial_content_miui"><![CDATA[MIUI用户可能需要在系统设置的“通知”-“通知栏”中将通知样式切换为“Android”。]]></string>
     <string name="comput_no_macros">还没有保存的宏。单击“录制宏”开始录制控制台命令。</string>
-
-    <!-- TCP Mode Enable Prompt Dialog -->
-    
-    
-    
-    
-    
-<string name="tcp_prompt_dialog_title"><![CDATA[启用持久 TCP 模式？]]></string>
+    <string name="tcp_prompt_dialog_title"><![CDATA[启用持久 TCP 模式？]]></string>
     <string name="tcp_prompt_dialog_message"><![CDATA[Shevery 正在运行，但持久 TCP 模式当前已禁用。\n\n启用 TCP 模式将允许 Shevery 继续运行并在后台自动重新连接，即使没有 Wi-Fi，直到您的设备重新启动。]]></string>
     <string name="tcp_prompt_dialog_enable"><![CDATA[启用]]></string>
     <string name="tcp_prompt_dialog_later"><![CDATA[现在不行]]></string>

@@ -374,7 +374,6 @@
 Оригінал: %1$s
 Виконується...]]></string>
     <string name="comput_command_no_output"><![CDATA[Команду виконано без виводу.]]></string>
-    <string name="comput_timed_out"><![CDATA[[E] Час очікування команди вичерпано (120с).]]></string>
     <string name="comput_exit_code"><![CDATA[[E] Команда завершилася з кодом %1$d.]]></string>
     <string name="comput_running_macro"><![CDATA[Виконується макрос: %1$s]]></string>
     <string name="comput_executing_cmd"><![CDATA[> Виконується команда: %1$s]]></string>
@@ -436,7 +435,7 @@
     <string name="shevery_update_auto_check_summary"><![CDATA[Шукати нові версії навіть коли додаток закрито]]></string>
     <string name="home_update_available_title"><![CDATA[Доступне оновлення Shevery: %s]]></string>
     <string name="home_update_available_body"><![CDATA[Нова версія готова. Натисніть, щоб завантажити.]]></string>
-    <string name="app_name"><![CDATA[Shevery]]></string>
+    <string name="app_name"><![CDATA[Шевери]]></string>
     <string name="shevery_update_check_title"><![CDATA[Перевірити оновлення Shevery Manager]]></string>
     <string name="comput_hero_title"><![CDATA[Консоль Shevery]]></string>
     <string name="accessibility_manager_lab_summary"><![CDATA[Управління та підтримання служб доступності активними]]></string>

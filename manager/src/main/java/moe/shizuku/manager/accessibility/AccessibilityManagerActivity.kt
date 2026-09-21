@@ -26,7 +26,7 @@ import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.ui.draw.clip
-import androidx.compose.material3.HorizontalDivider
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -207,55 +207,59 @@ class AccessibilityManagerActivity : AppActivity() {
                  }
 
                  if (showWriteFailedDialog) {
-                     AlertDialog(
-                         onDismissRequest = { showWriteFailedDialog = false },
-                         text = {
-                             Text(
-                                 text = stringResource(R.string.accessibility_manager_write_failed),
-                                 style = MaterialTheme.typography.bodyMedium,
-                                 color = MaterialTheme.colorScheme.onSurfaceVariant
-                             )
-                         },
-                         confirmButton = {
-                             Button(onClick = { showWriteFailedDialog = false }) {
-                                 Text(stringResource(android.R.string.ok))
-                             }
-                         },
-                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                         shape = MaterialTheme.shapes.extraLarge
-                     )
-                 }
+                    OkAlertDialog(
+                        text = stringResource(R.string.accessibility_manager_write_failed),
+                        onDismiss = { showWriteFailedDialog = false }
+                    )
+                }
 
-                 detailsDialogData?.let { (title, description) ->
-                     AlertDialog(
-                         onDismissRequest = { detailsDialogData = null },
-                         title = {
-                             Text(
-                                 text = title,
-                                 style = MaterialTheme.typography.headlineSmall,
-                                 fontWeight = FontWeight.Bold
-                             )
-                         },
-                         text = if (!description.isNullOrBlank()) {
-                             {
-                                 Text(
-                                     text = description.toString(),
-                                     style = MaterialTheme.typography.bodyMedium,
-                                     color = MaterialTheme.colorScheme.onSurfaceVariant
-                                 )
-                             }
-                         } else null,
-                         confirmButton = {
-                             Button(onClick = { detailsDialogData = null }) {
-                                 Text(stringResource(android.R.string.ok))
-                             }
-                         },
-                         containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                         shape = MaterialTheme.shapes.extraLarge
-                     )
-                 }
-             }
-         }
+                detailsDialogData?.let { (title, description) ->
+                    OkAlertDialog(
+                        title = title,
+                        text = description.toString(),
+                        onDismiss = { detailsDialogData = null }
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun OkAlertDialog(
+        title: String? = null,
+        text: String? = null,
+        onDismiss: () -> Unit
+    ) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = title?.let { { DialogTitle(it) } },
+            text = text?.takeIf { it.isNotBlank() }?.let { body -> { DialogBody(body) } },
+            confirmButton = {
+                Button(onClick = onDismiss) {
+                    Text(stringResource(android.R.string.ok))
+                }
+            },
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shape = MaterialTheme.shapes.extraLarge
+        )
+    }
+
+    @Composable
+    private fun DialogTitle(value: String) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+    }
+
+    @Composable
+    private fun DialogBody(value: String) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 
     override fun onDestroy() {
@@ -319,7 +323,7 @@ private fun ServiceRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = true, onClick = onDetails)
+            .clickable(onClick = onDetails)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)

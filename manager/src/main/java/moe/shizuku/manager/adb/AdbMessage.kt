@@ -36,7 +36,7 @@ class AdbMessage(
             (command.toLong() xor 0xFFFFFFFF).toInt(),
             data)
 
-    fun validate(): Boolean {
+    internal fun validate(): Boolean {
         if (command != magic xor -0x1) return false
         if (data_length != 0 && crc32(data) != data_crc32) return false
         return true

@@ -2,7 +2,6 @@ package moe.shizuku.manager.starter
 
 import java.io.File
 import moe.shizuku.manager.application
-import moe.shizuku.manager.ShizukuApplication
 import moe.shizuku.manager.utils.ShizukuStateMachine
 
 private val app = application

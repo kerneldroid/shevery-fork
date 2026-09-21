@@ -32,7 +32,16 @@ class ShizukuApplication : Application() {
     private fun init(context: Context?) {
         ShizukuSettings.initialize(context)
         LocaleDelegate.defaultLocale = ShizukuSettings.getLocale()
-        AppCompatDelegate.setDefaultNightMode(ShizukuSettings.getNightMode())
+        // Value 3 is a legacy "follow system" constant once shipped in
+        // night_mode_value; AppCompat only understands -1/1/2. Normalize once
+        // at startup so devices that stored 3 get real FOLLOW_SYSTEM.
+        val nightMode = when (ShizukuSettings.getNightMode()) {
+            AppCompatDelegate.MODE_NIGHT_YES,
+            AppCompatDelegate.MODE_NIGHT_NO,
+            AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM -> ShizukuSettings.getNightMode()
+            else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(nightMode)
     }
 
     override fun onCreate() {

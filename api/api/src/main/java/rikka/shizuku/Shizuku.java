@@ -58,6 +58,8 @@ public class Shizuku {
             permissionGranted = data.getBoolean(BIND_APPLICATION_PERMISSION_GRANTED, false);
             shouldShowRequestPermissionRationale = data.getBoolean(BIND_APPLICATION_SHOULD_SHOW_REQUEST_PERMISSION_RATIONALE, false);
 
+            Log.i("Shizuku", "Received bindApplication callback: serverUid=" + serverUid + ", version=" + serverApiVersion);
+            binderReady = true;
             scheduleBinderReceivedListeners();
         }
 
@@ -132,6 +134,7 @@ public class Shizuku {
         if (binder == newBinder) return;
 
         if (newBinder == null) {
+            Log.w("Shizuku", "Server binder is null, clearing state");
             binder = null;
             service = null;
             serverUid = -1;
@@ -154,11 +157,13 @@ public class Shizuku {
             }
 
             try {
+                Log.i("Shizuku", "Received server binder, attaching application for " + packageName);
                 if (!attachApplicationV13(binder, packageName) && !attachApplicationV11(binder, packageName)) {
                     preV11 = true;
                 }
                 Log.i("ShizukuApplication", "attachApplication");
             } catch (Throwable e) {
+                Log.e("Shizuku", "attachApplication failed for " + packageName, e);
                 Log.w("ShizukuApplication", Log.getStackTraceString(e));
             }
 

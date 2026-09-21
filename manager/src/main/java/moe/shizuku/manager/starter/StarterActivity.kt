@@ -60,11 +60,14 @@ class StarterActivity : AppActivity() {
 
     private var waitingForService = false
 
+    private val startedWithRoot by lazy { intent.getBooleanExtra(EXTRA_IS_ROOT, true) }
+    private val startedWithDhizuku by lazy { intent.getBooleanExtra(EXTRA_IS_DHIZUKU, false) }
+
     private val viewModel by viewModels {
         ViewModel(
             this,
-            intent.getBooleanExtra(EXTRA_IS_ROOT, true),
-            intent.getBooleanExtra(EXTRA_IS_DHIZUKU, false),
+            startedWithRoot,
+            startedWithDhizuku,
             intent.getStringExtra(EXTRA_HOST),
             intent.getIntExtra(EXTRA_PORT, 0)
         )
@@ -73,9 +76,6 @@ class StarterActivity : AppActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         moe.shizuku.manager.service.WatchdogManager.isStarterActive = true
-
-        val startedWithRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, true)
-        val startedWithDhizuku = intent.getBooleanExtra(EXTRA_IS_DHIZUKU, false)
 
         viewModel.output.observe(this) {
             val output = it.data.orEmpty().trim()
@@ -100,12 +100,13 @@ class StarterActivity : AppActivity() {
                     }
                     val running = ShizukuStateMachine.awaitRunning(12_000L)
 
-                    if (running) {
+                    if (running || Shizuku.pingBinder()) {
                         moe.shizuku.manager.service.WatchdogManager.clearUserStopRequest(this@StarterActivity)
                         viewModel.appendOutput("Service started, this window will be automatically closed in 3 seconds")
                         delay(3000L)
                         if (!isFinishing) finish()
                     } else {
+                        Log.e("Shizuku", "Timed out waiting for service binder. State=${ShizukuStateMachine.get()}, ping=${Shizuku.pingBinder()}")
                         viewModel.appendOutput("")
                         viewModel.appendOutput("✗ Timed out waiting for Shevery service to initialize.")
                         viewModel.appendOutput("  The starter process completed, but the server binder was not received.")
@@ -145,8 +146,6 @@ class StarterActivity : AppActivity() {
                     navigationContentDescription = R.string.accessibility_close
                 ) {
                     item {
-                        val startedWithRoot = intent.getBooleanExtra(EXTRA_IS_ROOT, true)
-                        val startedWithDhizuku = intent.getBooleanExtra(EXTRA_IS_DHIZUKU, false)
                         val isServiceStarted = output.contains("Service started")
                         ExpressiveCard(
                             icon = when {
@@ -264,13 +263,6 @@ private class ViewModel(context: Context, root: Boolean, dhizuku: Boolean, host:
         postResult()
     }
 
-    private fun appendRaw(value: String?) {
-        synchronized(outputLock) {
-            sb.append(value.orEmpty()).append('\n')
-        }
-        postResult()
-    }
-
     private fun appendLine(value: String) {
         synchronized(outputLock) {
             sb.append(value).append('\n')
@@ -310,7 +302,7 @@ private class ViewModel(context: Context, root: Boolean, dhizuku: Boolean, host:
 
             Shell.cmd(Starter.internalCommand).to(object : CallbackList<String?>() {
                 override fun onAddElement(s: String?) {
-                    appendRaw(s)
+                    appendLine(s.orEmpty())
                 }
             }).submit {
                 if (it.code != 0) {
@@ -348,10 +340,6 @@ private class ViewModel(context: Context, root: Boolean, dhizuku: Boolean, host:
                 postResult(it)
             }
         }
-    }
-
-    private suspend fun waitForShizukuBinder(timeoutMs: Long = 10_000L): Boolean {
-        return ShizukuStateMachine.awaitRunning(timeoutMs)
     }
 
     private fun startDhizuku(context: Context) {
@@ -427,7 +415,7 @@ private class ViewModel(context: Context, root: Boolean, dhizuku: Boolean, host:
 
                     appendLine("✓ Starter command sent to Dhizuku shell.")
                     appendLine("Waiting for Shevery service to initialize...")
-                    if (waitForShizukuBinder()) {
+                    if (ShizukuStateMachine.awaitRunning(10_000L)) {
                         appendLine("✓ Shevery binder verified.")
                         postResult()
                     } else {

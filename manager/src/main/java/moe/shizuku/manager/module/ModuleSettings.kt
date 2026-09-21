@@ -3,14 +3,7 @@ package moe.shizuku.manager.module
 import androidx.annotation.StringRes
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ShizukuSettings
-import android.security.keystore.KeyGenParameterSpec
-import android.security.keystore.KeyProperties
-import android.util.Base64
-import java.security.KeyStore
-import javax.crypto.Cipher
-import javax.crypto.KeyGenerator
-import javax.crypto.SecretKey
-import javax.crypto.spec.GCMParameterSpec
+import moe.shizuku.manager.commandium.AiProviderRepository
 
 object ModuleSettings {
 
@@ -29,12 +22,16 @@ object ModuleSettings {
     private const val KEY_TRUSTED_MODULES = "adb_modules_trusted_modules"
     private const val KEY_CONNECTOR_ENABLED = "shizuku_connector_enabled"
     private const val KEY_DHIZUKU_ENABLED = "shizuku_dhizuku_enabled"
-    private const val KEY_KEEP_ALIVE = "shizuku_keep_alive"
     private const val KEY_VERBOSE_LOGGING = "shizuku_verbose_logging"
-    private const val KEY_AUTO_RESTART = "shizuku_auto_restart_on_crash"
     private const val KEY_NOTIFY_DEATH = "shizuku_notify_service_death"
+    private const val KEY_NOTIFY_RECOVERY = "shizuku_notify_recovery"
+    private const val KEY_AUTO_REFRESH_RESUME = "shizuku_auto_refresh_resume"
     private const val KEY_ERROR_PROTECT = "shizuku_error_protect"
+    // Legacy watchdog prefs from before the toggle consolidation (PR #186).
+    private const val KEY_LEGACY_KEEP_ALIVE = "shizuku_keep_alive"
+    private const val KEY_LEGACY_AUTO_RESTART = "shizuku_auto_restart_on_crash"
     private const val KEY_COMPAT_STUB = "shizuku_compat_stub"
+    private const val KEY_WIFI_REASSERT = "shizuku_wifi_adb_reassert"
 
 
     enum class AccessMode(
@@ -227,28 +224,12 @@ object ModuleSettings {
     }
 
 
-    fun isKeepAlive(): Boolean {
-        return ShizukuSettings.getPreferences().getBoolean(KEY_KEEP_ALIVE, false)
-    }
-
-    fun setKeepAlive(value: Boolean) {
-        ShizukuSettings.getPreferences().edit().putBoolean(KEY_KEEP_ALIVE, value).apply()
-    }
-
     fun isVerboseLogging(): Boolean {
         return ShizukuSettings.getPreferences().getBoolean(KEY_VERBOSE_LOGGING, false)
     }
 
     fun setVerboseLogging(value: Boolean) {
         ShizukuSettings.getPreferences().edit().putBoolean(KEY_VERBOSE_LOGGING, value).apply()
-    }
-
-    fun isAutoRestartOnCrash(): Boolean {
-        return ShizukuSettings.getPreferences().getBoolean(KEY_AUTO_RESTART, false)
-    }
-
-    fun setAutoRestartOnCrash(value: Boolean) {
-        ShizukuSettings.getPreferences().edit().putBoolean(KEY_AUTO_RESTART, value).apply()
     }
 
     fun isNotifyOnServiceDeath(): Boolean {
@@ -259,12 +240,45 @@ object ModuleSettings {
         ShizukuSettings.getPreferences().edit().putBoolean(KEY_NOTIFY_DEATH, value).apply()
     }
 
-    fun isErrorProtectEnabled(): Boolean {
+    fun isNotifyOnRecovery(): Boolean {
+        return ShizukuSettings.getPreferences().getBoolean(KEY_NOTIFY_RECOVERY, false)
+    }
+
+    fun setNotifyOnRecovery(value: Boolean) {
+        ShizukuSettings.getPreferences().edit().putBoolean(KEY_NOTIFY_RECOVERY, value).apply()
+    }
+
+    fun isAutoRefreshOnResume(): Boolean {
+        return ShizukuSettings.getPreferences().getBoolean(KEY_AUTO_REFRESH_RESUME, true)
+    }
+
+    fun setAutoRefreshOnResume(value: Boolean) {
+        ShizukuSettings.getPreferences().edit().putBoolean(KEY_AUTO_REFRESH_RESUME, value).apply()
+    }
+
+    fun isWatchdogEnabled(): Boolean {
         return ShizukuSettings.getPreferences().getBoolean(KEY_ERROR_PROTECT, true)
     }
 
-    fun setErrorProtectEnabled(value: Boolean) {
+    fun setWatchdogEnabled(value: Boolean) {
         ShizukuSettings.getPreferences().edit().putBoolean(KEY_ERROR_PROTECT, value).apply()
+    }
+
+    // Maps pre-consolidation watchdog prefs (PR #186（ into the single master toggle.
+    // Users who had the legacy keep-alive or auto-restart prefs enabled but Watchdog
+    // off would otherwise silently lose watchdog coverage after updating.
+
+    fun migrateLegacyWatchdogPrefs() {
+        val prefs = ShizukuSettings.getPreferences()
+        if (prefs.getBoolean(KEY_ERROR_PROTECT, true)) return
+        val legacyEnabled = prefs.getBoolean(KEY_LEGACY_KEEP_ALIVE, false) ||
+            prefs.getBoolean(KEY_LEGACY_AUTO_RESTART, false)
+        if (legacyEnabled) {
+            prefs.edit().putBoolean(KEY_ERROR_PROTECT, true)
+                .remove(KEY_LEGACY_KEEP_ALIVE)
+                .remove(KEY_LEGACY_AUTO_RESTART)
+                .apply()
+        }
     }
 
     fun isCompatibilityStubEnabled(): Boolean {
@@ -275,93 +289,87 @@ object ModuleSettings {
         ShizukuSettings.getPreferences().edit().putBoolean(KEY_COMPAT_STUB, value).apply()
     }
 
+    // Off by default: only ROMs that silently clear adb_wifi_enabled (legacy
+    // TCP mode in use, or on lock) need the 0 -> 1 toggle during ADB start.
+    fun isWifiReassertEnabled(): Boolean {
+        return ShizukuSettings.getPreferences().getBoolean(KEY_WIFI_REASSERT, false)
+    }
+
+    fun setWifiReassertEnabled(value: Boolean) {
+        ShizukuSettings.getPreferences().edit().putBoolean(KEY_WIFI_REASSERT, value).apply()
+    }
+
     // Comput Settings
-    private const val KEY_COMPUT_API_KEY = "comput_api_key"
     private const val KEY_COMPUT_RECOMMAND = "comput_recommand"
     private const val KEY_COMPUT_AI_EXPLAIN = "comput_ai_explain"
     private const val KEY_COMPUT_GEMINI_MODEL = "comput_gemini_model"
-
-    private const val PROVIDER = "AndroidKeyStore"
-    private const val ALIAS = "SheveryGeminiKey"
-    private const val TRANSFORMATION = "AES/GCM/NoPadding"
-
-    private fun getSecretKey(): SecretKey {
-        val keyStore = KeyStore.getInstance(PROVIDER).apply { load(null) }
-        val key = keyStore.getKey(ALIAS, null) as? SecretKey
-        if (key != null) return key
-
-        val keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, PROVIDER)
-        val spec = KeyGenParameterSpec.Builder(
-            ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        )
-            .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
-            .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            .build()
-        keyGenerator.init(spec)
-        return keyGenerator.generateKey()
-    }
-
-    private fun encrypt(plainText: String): String {
-        if (plainText.isEmpty()) return ""
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        cipher.init(Cipher.ENCRYPT_MODE, getSecretKey())
-        val iv = cipher.iv
-        val encryptedBytes = cipher.doFinal(plainText.toByteArray(Charsets.UTF_8))
-        val ivString = Base64.encodeToString(iv, Base64.NO_WRAP)
-        val encryptedString = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
-        return "$ivString:$encryptedString"
-    }
-
-    private fun decrypt(cipherText: String): String {
-        if (cipherText.isEmpty()) return ""
-        val parts = cipherText.split(":")
-        if (parts.size != 2) return ""
-        val iv = Base64.decode(parts[0], Base64.NO_WRAP)
-        val encryptedBytes = Base64.decode(parts[1], Base64.NO_WRAP)
-
-        val cipher = Cipher.getInstance(TRANSFORMATION)
-        val spec = GCMParameterSpec(128, iv)
-        cipher.init(Cipher.DECRYPT_MODE, getSecretKey(), spec)
-        val decryptedBytes = cipher.doFinal(encryptedBytes)
-        return String(decryptedBytes, Charsets.UTF_8)
-    }
+    // Comput AI provider settings (generic OpenAI-compatible endpoint)
+    private const val KEY_COMPUT_AI_NAME = "comput_ai_name"
+    private const val KEY_COMPUT_AI_BASE_URL = "comput_ai_base_url"
+    private const val KEY_COMPUT_AI_MODEL = "comput_ai_model"
 
     fun getComputApiKey(): String {
-        val raw = ShizukuSettings.getPreferences().getString(KEY_COMPUT_API_KEY, "") ?: ""
-        if (raw.isEmpty()) return ""
-        if (!raw.contains(":")) {
-            // It was plain text before, let's encrypt and save it now
-            try {
-                val encrypted = encrypt(raw)
-                ShizukuSettings.getPreferences().edit().putString(KEY_COMPUT_API_KEY, encrypted).apply()
-                return raw
-            } catch (e: Throwable) {
-                return raw
-            }
-        }
-        return try {
-            decrypt(raw)
-        } catch (e: Throwable) {
-            ""
-        }
+        return AiProviderRepository.getActiveKey()
     }
 
     fun setComputApiKey(value: String) {
-        val encrypted = try {
-            encrypt(value)
-        } catch (e: Throwable) {
-            value
-        }
-        ShizukuSettings.getPreferences().edit().putString(KEY_COMPUT_API_KEY, encrypted).apply()
+        AiProviderRepository.setActiveKey(value)
     }
 
+    fun getComputAiName(): String {
+        migrateComputAiPrefsIfNeeded()
+        return AiProviderRepository.getActive()?.name ?: ""
+    }
+
+    fun setComputAiName(value: String) {
+        AiProviderRepository.getActive()?.let { AiProviderRepository.update(it.copy(name = value)) }
+    }
+
+    fun getComputAiBaseUrl(): String {
+        migrateComputAiPrefsIfNeeded()
+        return AiProviderRepository.getActive()?.baseUrl ?: "https://openrouter.ai/api/v1/"
+    }
+
+    fun setComputAiBaseUrl(value: String) {
+        val trimmed = value.trim()
+        require(trimmed.startsWith("http://") || trimmed.startsWith("https://")) { "Base URL must start with http:// or https://" }
+        AiProviderRepository.getActive()?.let { AiProviderRepository.update(it.copy(baseUrl = trimmed)) }
+    }
+
+    fun getComputAiModel(): String {
+        migrateComputAiPrefsIfNeeded()
+        return AiProviderRepository.getActive()?.model ?: ""
+    }
+
+    fun setComputAiModel(value: String) {
+        AiProviderRepository.getActive()?.let { AiProviderRepository.update(it.copy(model = value)) }
+    }
+
+    // One-time migration on first read: a user who had a custom Gemini model
+    // gets it copied onto the new generic provider pref (named "Gemini", pointed at
+    // Google's OpenAI-compatible endpoint), keeping the existing Keystore-encrypted key.
+
+    private fun migrateComputAiPrefsIfNeeded() {
+        val prefs = ShizukuSettings.getPreferences()
+        if (!prefs.contains(KEY_COMPUT_GEMINI_MODEL)) return
+        if (prefs.contains(KEY_COMPUT_AI_MODEL)) return
+        val legacyModel = prefs.getString(KEY_COMPUT_GEMINI_MODEL, "") ?: ""
+        if (legacyModel.isBlank()) return
+        prefs.edit()
+            .putString(KEY_COMPUT_AI_MODEL, legacyModel)
+            .putString(KEY_COMPUT_AI_NAME, "Gemini")
+            .putString(KEY_COMPUT_AI_BASE_URL, "https://generativelanguage.googleapis.com/v1beta/openai/")
+            .apply()
+    }
+
+    @Deprecated("Use getComputAiModel()")
     fun getComputGeminiModel(): String {
-        return ShizukuSettings.getPreferences().getString(KEY_COMPUT_GEMINI_MODEL, "gemini-3.6-flash") ?: "gemini-3.6-flash"
+        return getComputAiModel()
     }
 
+    @Deprecated("Use setComputAiModel()")
     fun setComputGeminiModel(value: String) {
-        ShizukuSettings.getPreferences().edit().putString(KEY_COMPUT_GEMINI_MODEL, value).apply()
+        setComputAiModel(value)
     }
 
     fun isComputRecommandEnabled(): Boolean {

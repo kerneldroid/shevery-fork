@@ -74,7 +74,7 @@ class ModuleInstaller private constructor() {
         githubPat: String?
     ): Uri? {
         val repoUrl = "https://api.github.com/repos/$owner/$repo"
-        val repoRequest = buildRequest(repoUrl, githubPat)
+        val repoRequest = buildGitHubRequest(repoUrl, githubPat)
         val repoResponse = client.newCall(repoRequest).execute()
 
         val defaultBranch = repoResponse.use { resp ->
@@ -91,7 +91,7 @@ class ModuleInstaller private constructor() {
         val rootPath = subPath?.trim('/')?.takeIf { it.isNotEmpty() } ?: ""
         val url = contentsUrl(owner, repo, rootPath, defaultBranch)
 
-        val request = buildRequest(url, githubPat)
+        val request = buildGitHubRequest(url, githubPat)
         val response = client.newCall(request).execute()
 
         response.use { resp ->
@@ -122,7 +122,7 @@ class ModuleInstaller private constructor() {
                 if (!visitedDirs.add(dirPath)) continue
 
                 val dirUrl = contentsUrl(owner, repo, dirPath, defaultBranch)
-                val dirRequest = buildRequest(dirUrl, githubPat)
+                val dirRequest = buildGitHubRequest(dirUrl, githubPat)
                 val dirResponse = client.newCall(dirRequest).execute()
 
                 dirResponse.use { dirResp ->
@@ -175,7 +175,7 @@ class ModuleInstaller private constructor() {
     ): Uri? {
         val url = "https://api.github.com/repos/$owner/$repo/releases/latest"
 
-        val request = buildRequest(url, githubPat)
+        val request = buildGitHubRequest(url, githubPat)
         val response = client.newCall(request).execute()
 
         val release = response.use { resp ->
@@ -206,7 +206,7 @@ class ModuleInstaller private constructor() {
         val zipFile = File(cacheDir, "$moduleId-release.zip")
 
         return try {
-            val downloadRequest = buildRequest(downloadUrl, githubPat)
+            val downloadRequest = buildGitHubRequest(downloadUrl, githubPat)
             val downloadResponse = client.newCall(downloadRequest).execute()
 
             downloadResponse.use { dlResp ->
@@ -230,19 +230,6 @@ class ModuleInstaller private constructor() {
         }
     }
 
-    private fun buildRequest(url: String, githubPat: String?): Request {
-        val builder = Request.Builder()
-            .url(url)
-            .header("Accept", "application/vnd.github+json")
-            .header("X-GitHub-Api-Version", "2022-11-28")
-
-        if (!githubPat.isNullOrBlank()) {
-            builder.header("Authorization", "Bearer $githubPat")
-        }
-
-        return builder.build()
-    }
-
     private fun cleanupOldZips(context: Context) {
         val cacheDir = File(context.cacheDir, "module_zips")
         if (!cacheDir.isDirectory) return
@@ -254,7 +241,7 @@ class ModuleInstaller private constructor() {
         }
     }
 
-    fun getRateLimit(): RateLimitTracker = rateLimit
+
 
     companion object {
         private const val TAG = "ModuleInstaller"
@@ -270,4 +257,17 @@ class ModuleInstaller private constructor() {
             }
         }
     }
+}
+
+internal fun buildGitHubRequest(url: String, githubPat: String?): Request {
+    val builder = Request.Builder()
+        .url(url)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", "2022-11-28")
+
+    if (!githubPat.isNullOrBlank()) {
+        builder.header("Authorization", "Bearer $githubPat")
+    }
+
+    return builder.build()
 }

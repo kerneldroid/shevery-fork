@@ -59,33 +59,24 @@ import moe.shizuku.common.util.InstalledPackagesCompat;
 
 public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuClientManager, ShizukuConfigManager> {
 
-    public static void main(String[] args) {
-        DdmHandleAppName.setAppName("shizuku_server", 0);
-        RishConfig.setLibraryPath(System.getProperty("shizuku.library.path"));
+    private static final String TAG = "Shizuku";
 
-        Looper.prepareMainLooper();
-        new ShizukuService();
-        Looper.loop();
+    public static void main(String[] args) {
+        try {
+            Log.i(TAG, "Starting Shizuku server (pid=" + android.os.Process.myPid() + ", uid=" + android.os.Process.myUid() + ")...");
+            DdmHandleAppName.setAppName("shizuku_server", 0);
+            RishConfig.setLibraryPath(System.getProperty("shizuku.library.path"));
+
+            Looper.prepareMainLooper();
+            new ShizukuService();
+            Looper.loop();
+        } catch (Throwable tr) {
+            Log.e(TAG, "Fatal exception in Shizuku server main", tr);
+            System.exit(1);
+        }
     }
 
-
-
     private static void waitSystemService(String name) {
-        if (ServiceManager.getService(name) != null) {
-            return;
-        }
-
-        try {
-            java.lang.reflect.Method waitForServiceMethod = ServiceManager.class.getMethod("waitForService", String.class);
-            LOGGER.i("waiting for service " + name + " via ServiceManager.waitForService...");
-            IBinder binder = (IBinder) waitForServiceMethod.invoke(null, name);
-            if (binder != null) {
-                return;
-            }
-        } catch (Throwable ignored) {
-            // Pre-Android 11 or hidden-api restricted, fall back to check loop
-        }
-
         while (ServiceManager.getService(name) == null) {
             try {
                 LOGGER.i("service " + name + " is not started, wait 200ms.");
@@ -120,6 +111,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
         ApplicationInfo ai = getManagerApplicationInfo();
         if (ai == null) {
+            Log.e(TAG, "Manager application " + MANAGER_APPLICATION_ID + " not found!");
             System.exit(ServerConstants.MANAGER_APP_NOT_FOUND);
         }
 
@@ -139,8 +131,8 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         BinderSender.register(this);
 
         mainHandler.post(() -> {
-            sendBinderToClient();
             sendBinderToManager();
+            sendBinderToClient();
         });
     }
 
@@ -260,6 +252,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
         try {
             application.bindApplication(reply);
         } catch (Throwable e) {
+            Log.e(TAG, "Failed to call bindApplication for " + requestPackageName, e);
             LOGGER.w(e, "attachApplication");
         }
     }
@@ -486,6 +479,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                 if (pi == null || pi.requestedPermissions == null)
                     continue;
 
+                if (Objects.equals(MANAGER_APPLICATION_ID, pi.packageName))
+                    continue;
+
                 if (ArraysKt.contains(pi.requestedPermissions, PERMISSION)) {
                     sendBinderToUserApp(binder, pi.packageName, userId);
                 }
@@ -540,6 +536,7 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                     break;
                 }
                 if (attempt >= NULL_PROVIDER_RETRY_BACKOFF_MS.length) {
+                    Log.e(TAG, "Failed to get content provider for " + name + " (user " + userId + ")");
                     LOGGER.e("provider is null %s %d (gave up after %d attempts)", name, userId, attempt + 1);
                     return;
                 }
@@ -548,7 +545,9 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
                         name, userId, backoff, attempt + 1, NULL_PROVIDER_RETRY_BACKOFF_MS.length + 1);
                 Thread.sleep(backoff);
             }
-            if (!provider.asBinder().pingBinder()) {
+            boolean isAlive = provider.asBinder().pingBinder();
+            if (!isAlive) {
+                Log.e(TAG, "Provider is dead: " + name + " (user " + userId + ")");
                 LOGGER.e("provider is dead %s %d", name, userId);
 
                 if (retry) {
@@ -569,11 +568,15 @@ public class ShizukuService extends Service<ShizukuUserServiceManager, ShizukuCl
 
             Bundle reply = IContentProviderUtils.callCompat(provider, null, name, "sendBinder", null, extra);
             if (reply != null) {
+                if (Objects.equals(MANAGER_APPLICATION_ID, packageName)) {
+                    Log.i(TAG, "Dispatched server binder to manager (" + packageName + ")");
+                }
                 LOGGER.i("send binder to user app %s in user %d", packageName, userId);
             } else {
                 LOGGER.w("failed to send binder to user app %s in user %d", packageName, userId);
             }
         } catch (Throwable tr) {
+            Log.e(TAG, "Failed to send binder to " + packageName + " (userId " + userId + ")", tr);
             LOGGER.e(tr, "failed send binder to user app %s in user %d", packageName, userId);
         } finally {
             if (provider != null) {

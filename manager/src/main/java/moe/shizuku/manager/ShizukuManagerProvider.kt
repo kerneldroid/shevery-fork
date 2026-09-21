@@ -1,6 +1,8 @@
 package moe.shizuku.manager
 
+import android.os.Binder
 import android.os.Bundle
+import android.util.Log
 import androidx.core.os.bundleOf
 import moe.shizuku.api.BinderContainer
 import moe.shizuku.manager.utils.Logger.LOGGER
@@ -36,16 +38,22 @@ class ShizukuManagerProvider : ShizukuProvider() {
                     val newBinder = container?.binder
                     if (newBinder != null) {
                         // Accept if no living binder OR if this is a new replacement binder from a restarted server
-                        if (!Shizuku.pingBinder() || Shizuku.getBinder() != newBinder) {
+                        val ping = Shizuku.pingBinder()
+                        val currentBinder = Shizuku.getBinder()
+                        if (!ping || currentBinder != newBinder) {
+                            Log.i("Shizuku", "ManagerProvider: received new/replacement server binder")
                             LOGGER.i("Received new/replacement Shizuku server binder in manager provider")
                             val pkg = context?.packageName ?: BuildConfig.APPLICATION_ID
                             Shizuku.onBinderReceived(newBinder, pkg)
                         } else {
                             LOGGER.d("sendBinder ignored: identical living binder already registered")
                         }
+                    } else {
+                        Log.e("Shizuku", "ManagerProvider: binder extracted from container is null")
                     }
                     Bundle()
                 } catch (e: Throwable) {
+                    Log.e("Shizuku", "ManagerProvider: exception in sendBinder", e)
                     LOGGER.e(e, "sendBinder")
                     super.call(method, arg, extras)
                 }

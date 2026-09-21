@@ -336,10 +336,10 @@
     <string name="update_settings_install_mode_sources"><![CDATA[மூலங்களிலிருந்து உருவாக்கு]]></string>
     <string name="update_settings_install_mode_release"><![CDATA[வெளியீட்டு ZIP-ஐப் பதிவிறக்கவும்]]></string>
     <string name="update_settings_github"><![CDATA[கிட்ஹப்]]></string>
-    <string name="update_settings_github_pat"><![CDATA[தனிப்பட்ட அணுகல்令牌]]></string>
+    <string name="update_settings_github_pat"><![CDATA[தனிப்பட்ட அணுகல் டோக்கன்]]></string>
     <string name="update_settings_github_pat_set"><![CDATA[காசோலைத் தொகுப்பு]]></string>
     <string name="update_settings_github_pat_unset"><![CDATA[இயக்கப்படவில்லை (மணிக்கு 60 கோரிக்கைகள்)]]></string>
-    <string name="update_settings_github_pat_title"><![CDATA[GitHub தனிப்பட்ட அணுகல்令]]></string>
+    <string name="update_settings_github_pat_title"><![CDATA[GitHub தனிப்பட்ட அணுகல் டோக்கன்]]></string>
     <string name="update_settings_github_pat_description"><![CDATA[விருப்பத்தேர்வு. ஒரு GitHub PAT, API விகித வரம்புகளை ஒரு மணி நேரத்திற்கு 60 கோரிக்கைகளிலிருந்து 5000 கோரிக்கைகளாக அதிகரிக்கிறது. பொதுக் களஞ்சியங்களுக்கு public_repo வரம்பு மட்டும் தேவை.]]></string>
     <string name="update_settings_github_pat_label"><![CDATA[குறியீடு]]></string>
     <string name="update_settings_github_pat_show"><![CDATA[காட்டு]]></string>
@@ -436,7 +436,6 @@
 அசல்: %1$s
 செயல்படுத்துகிறது...]]></string>
     <string name="comput_command_no_output"><![CDATA[கட்டளை எந்த வெளியீடும் இன்றி நிறைவு செய்யப்பட்டது.]]></string>
-    <string name="comput_timed_out"><![CDATA[[E] கட்டளை 120 வினாடிகளுக்குப் பிறகு காலாவதியானது.]]></string>
     <string name="comput_exit_code"><![CDATA[[E] கட்டளை %1$d குறியீட்டுடன் வெளியேறியது.]]></string>
     <string name="comput_running_macro"><![CDATA[மேக்ரோ இயங்குகிறது: %1$s]]></string>
     <string name="comput_executing_cmd"><![CDATA[கட்டளையைச் செயல்படுத்துதல்: %1$s]]></string>

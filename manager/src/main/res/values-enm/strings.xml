@@ -378,7 +378,7 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="comput_ai_api_key_empty"><![CDATA[Google AI Studio API Key is empty! Please configure it in Shevery Settings (Comput Console Settings).]]></string>
     <string name="comput_ai_api_key_title"><![CDATA[Google AI Studio API Key]]></string>
     <string name="comput_ai_api_key_not_configured"><![CDATA[Not configured (Gemini AI will not work)]]></string>
-    <string name="comput_gemini_model_title"><![CDATA[Gemini AI Model]]></string>
+    <string name="comput_gemini_model_title"><![CDATA[AI Model]]></string>
     <string name="comput_gemini_explain"><![CDATA[Gemini Explain]]></string>
     <string name="comput_api_key_label"><![CDATA[API Key]]></string>
     <string name="comput_show_api_key"><![CDATA[Show API key]]></string>
@@ -405,7 +405,6 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
 Original: %1$s
 Executing...]]></string>
     <string name="comput_command_no_output"><![CDATA[Command completed with no output.]]></string>
-    <string name="comput_timed_out"><![CDATA[[E] Command timed out after 120 seconds.]]></string>
     <string name="comput_exit_code"><![CDATA[[E] Command exited with code %1$d.]]></string>
     <string name="comput_running_macro"><![CDATA[Running macro: %1$s]]></string>
     <string name="comput_executing_cmd"><![CDATA[> Executing command: %1$s]]></string>

@@ -69,7 +69,7 @@ object ShizukuStateMachine {
             if (oldState == newState) return
         } while (!state.compareAndSet(oldState, newState))
 
-        Log.d(TAG, "ShizukuStateMachine: $oldState -> $newState")
+        Log.i("Shizuku", "State transition: $oldState -> $newState")
         java.util.ArrayList<(State) -> Unit>().apply {
             listeners.forEach { add(it) }
         }.forEach { it(newState) }
@@ -82,7 +82,7 @@ object ShizukuStateMachine {
      * If it was STOPPING (explicit stop), optionally auto-disable USB debugging
      * and transition to STOPPED.
      */
-    fun setDead() = transitionAtomic {
+    internal fun setDead() = transitionAtomic {
         when (it) {
             State.RUNNING -> State.CRASHED
             State.STOPPING -> {

@@ -34,7 +34,7 @@ try {
     if (!commit.isEmpty()) gitCommitId = commit
 } catch (Exception ignored) {}
 
-def gitCommitCount = 35
+def gitCommitCount = 38
 
 def baseVersionName = "${api_version_name}"
 ext {

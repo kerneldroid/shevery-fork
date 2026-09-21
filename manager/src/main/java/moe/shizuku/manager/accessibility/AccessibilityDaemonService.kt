@@ -28,7 +28,6 @@ import moe.shizuku.manager.MainActivity
 import moe.shizuku.manager.R
 import moe.shizuku.manager.ktx.logd
 import moe.shizuku.manager.ktx.logi
-import moe.shizuku.manager.ktx.logw
 
 /**
  * Foreground daemon that keeps pinned accessibility services alive.

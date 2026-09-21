@@ -12,6 +12,7 @@ import androidx.work.WorkManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 import moe.shizuku.manager.ShizukuSettings
@@ -81,12 +82,14 @@ object AdbNetworkObserver {
     }
 
     private fun onUnmeteredAvailable(app: Application) {
-        // Binder already up (started by another path): any lingering
-        // "awaiting Wi-Fi" banner is definitively stale — clear it. This
-        // check runs before the debounce so a no-op binder-up flap doesn't
-        // burn the 5s window a real unstarted case would then wait out.
-
+        // Hostile ROMs clear adb_wifi_enabled when wifi drops and never restore
+        // it: a live session dies and stays dead. Re-arm after the stack
+        // settles (gated by the toggle; idempotent; no-ops when off or flag-1(.
+        reArmWifiAfterSettle(app)
         if (Shizuku.pingBinder()) {
+            // "awaiting Wi-Fi" banner is definitively stale — clear it. This
+            // check runs before the debounce so a no-op binder-up flap doesn't
+            // burn the 5s window a real unstarted case would then wait out.
 
             ShizukuReceiverStarter.updateNotification(
                 app.applicationContext,
@@ -136,6 +139,13 @@ object AdbNetworkObserver {
             } catch (e: Exception) {
                 Log.w(TAG, "onUnmeteredAvailable enqueue failed", e)
             }
+        }
+    }
+
+    private fun reArmWifiAfterSettle(app: Application) {
+        scope.launch {
+            delay(3_000)
+            WifiDebugReassert.reassertIfEnabled(app.applicationContext)
         }
     }
 }

@@ -367,7 +367,6 @@ has been copied to clipboard.]]></string>
     <string name="comput_ask_gemini"><![CDATA[שאל את Gemini]]></string>
     <string name="comput_executing"><![CDATA[מפעיל: %1$s ...]]></string>
     <string name="comput_command_no_output"><![CDATA[הפקודה הושלמה ללא פלט.]]></string>
-    <string name="comput_timed_out"><![CDATA[[E] הפקודה פג תוקפה לאחר 120 שניות.]]></string>
     <string name="comput_exit_code"><![CDATA[[E] הפקודה יצאה עם קוד %1$d.]]></string>
     <string name="comput_running_macro"><![CDATA[מריץ מאקרו: %1$s]]></string>
     <string name="comput_executing_cmd"><![CDATA[> מריץ פקודה: %1$s]]></string>
@@ -441,7 +440,7 @@ has been copied to clipboard.]]></string>
     <string name="shevery_update_auto_check_summary"><![CDATA[חפש גרסאות חדשות גם כשהאפליקציה סגורה]]></string>
     <string name="home_update_available_title"><![CDATA[עדכון גדול זמין: %s]]></string>
     <string name="home_update_available_body"><![CDATA[גרסה חדשה יותר מוכנה. הקש כדי להוריד.]]></string>
-    <string name="wadb_permission_error_notification_title"><![CDATA[Permission Error 15. wadb_permission_error_notification_content: Shevery konnte nicht auf dem Startbildschirm gestartet werden. Öffnen Sie Shevery, um das Problem zu überprüfen.]]></string>
+    <string name="wadb_permission_error_notification_title"><![CDATA[שגיאת הרשאה]]></string>
     <string name="wadb_notification_channel"><![CDATA[ADB-Autostartdienst]]></string>
     <string name="comput_stop_desc"><![CDATA[Stop-Befehl]]></string>
     <string name="accessibility_manager_service_no_description"><![CDATA[Keine Beschreibung vom Dienst bereitgestellt.]]></string>

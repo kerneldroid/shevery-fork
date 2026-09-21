@@ -1,0 +1,112 @@
+name: Copilot Auto-Assign
+
+# Built-in GitHub Copilot automation (official APIs only, no third-party actions):
+# - every new/reopened issue -> assigned to the Copilot coding agent, which
+#   reacts with eyes, opens a branch + draft PR and iterates on feedback:
+#   POST /repos/{owner}/{repo}/issues/{n}/assignees
+#   { "assignees": ["copilot-swe-agent[bot]"], "agent_assignment": {...} }
+#   (https://docs.github.com/en/copilot/how-tos/use-copilot-agents/cloud-agent/use-cloud-agent-via-the-api)
+# - every new/reopened/ready PR -> Copilot requested as code reviewer:
+#   POST /repos/{owner}/{repo}/pulls/{n}/requested_reviewers
+#   { "reviewers": ["copilot-pull-request-reviewer[bot]"] }
+#
+# REQUIRED one-time setup (cannot be pushed via git):
+# 1. Repo Settings -> Copilot -> enable "Copilot coding agent" and
+#    "Copilot code review" for this repository (needs a Copilot plan with
+#    agent access + premium-request budget).
+# 2. A *user* token that may start agent sessions, stored as the COPILOT_PAT
+#    repo secret: fine-grained PAT with "Metadata: read" + read&write on
+#    Actions, Contents, Issues, Pull requests (or classic PAT, `repo` scope).
+#    GITHUB_TOKEN cannot start agent sessions, so without the secret the
+#    issue job only logs a warning and exits 0. The PR review job falls back
+#    to GITHUB_TOKEN when COPILOT_PAT is absent.
+#
+# pull_request_target (not pull_request!) is deliberate, same as ai-triage.yml:
+# reviewer requests need write access even for PRs from forks. This is safe
+# because we do NOT check out or execute the PR's own code — only GitHub API
+# calls. If you ever add `actions/checkout` on the PR head or run PR code,
+# switch back to pull_request.
+
+on:
+  issues:
+    types: [opened, reopened]
+  pull_request_target:
+    types: [opened, reopened, ready_for_review]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: copilot-auto-${{ github.event.issue.number || github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  copilot-on-issue:
+    if: github.event_name == 'issues' && github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign issue to Copilot coding agent
+        env:
+          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ github.event.issue.number }}
+          BASE: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ -z "$COPILOT_PAT" ]; then
+            echo "::warning::COPILOT_PAT secret is missing — add a user PAT (fine-grained: Metadata read + Actions/Contents/Issues/PRs write, or classic 'repo') as a repo secret, then reopen the issue. Skipping Copilot assignment."
+            exit 0
+          fi
+          export GH_TOKEN="$COPILOT_PAT"
+          # Idempotent: skip if Copilot is already assigned.
+          if gh api "repos/$REPO/issues/$ISSUE" --jq '.assignees[].login' | grep -qi 'copilot'; then
+            echo "Copilot already assigned to #$ISSUE — nothing to do."
+            exit 0
+          fi
+          # jq (preinstalled on runners) builds the nested agent_assignment
+          # payload — avoids heredoc terminator/indentation pitfalls in YAML.
+          PAYLOAD="$(jq -n --arg base "$BASE" \
+            '{assignees: ["copilot-swe-agent[bot]"],
+              agent_assignment: {base_branch: $base,
+                custom_instructions: "Work in small reviewable steps and open a draft pull request against the base branch. Follow existing repo conventions. Do not merge anything yourself."}}')"
+          if echo "$PAYLOAD" | gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPO/issues/$ISSUE/assignees" \
+            --input - >/dev/null
+          then
+            echo "Issue #$ISSUE assigned to copilot-swe-agent."
+          else
+            echo "::warning::Could not assign #$ISSUE to Copilot. Likely causes: Copilot coding agent is not enabled for this repo/plan, COPILOT_PAT lacks scopes, or premium-request budget is exhausted. Fix in Settings -> Copilot, then reopen the issue."
+            exit 0
+          fi
+
+  copilot-review-on-pr:
+    if: github.event_name == 'pull_request_target' && github.event.sender.type != 'Bot'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot code review
+        env:
+          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
+          FALLBACK_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [ -n "$COPILOT_PAT" ]; then export GH_TOKEN="$COPILOT_PAT"; else export GH_TOKEN="$FALLBACK_TOKEN"; fi
+          # Idempotent: skip if Copilot review already requested or submitted.
+          REQUESTED="$(gh api "repos/$REPO/pulls/$PR" --jq '[.requested_reviewers[].login] | map(ascii_downcase) | index("copilot")')"
+          if [ "$REQUESTED" != "null" ]; then
+            echo "Copilot review already requested on #$PR — nothing to do."
+            exit 0
+          fi
+          if gh api --method POST \
+            -H "Accept: application/vnd.github+json" \
+            "repos/$REPO/pulls/$PR/requested_reviewers" \
+            -f 'reviewers[]=copilot-pull-request-reviewer[bot]' >/dev/null; then
+            STATE="$(gh api "repos/$REPO/pulls/$PR" --jq '[.requested_reviewers[].login] | map(ascii_downcase) | index("copilot")')"
+            if [ "$STATE" != "null" ]; then
+              echo "Copilot code review requested on #$PR."
+              exit 0
+            fi
+          fi
+          echo "::warning::Could not request Copilot review on #$PR. Likely causes: Copilot code review is not enabled for this repo (Settings -> Copilot), or the token lacks pull-requests write. Enable it and re-request the review from the PR sidebar."
+          exit 0

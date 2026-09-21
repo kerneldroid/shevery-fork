@@ -11,6 +11,7 @@
 #include <cerrno>
 #include <string>
 #include <termios.h>
+#include <csignal>
 #include "android.h"
 #include "misc.h"
 #include "selinux.h"
@@ -92,8 +93,10 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
 #define ARG_PUSH_DEBUG_ONLY(v, arg)
 #endif
 
+    char dex_copy[PATH_MAX]{0};
+    strncpy(dex_copy, dex_path, PATH_MAX - 1);
     char lib_path[PATH_MAX]{0};
-    snprintf(lib_path, PATH_MAX, "%s/lib/%s", dirname(dex_path), ABI);
+    snprintf(lib_path, PATH_MAX, "%s/lib/%s", dirname(dex_copy), ABI);
 
     ARG(argv)
     ARG_PUSH(argv, "/system/bin/app_process")
@@ -106,14 +109,18 @@ v_current = (uintptr_t) v + v_size - sizeof(char *); \
     ARG_PUSH_DEBUG_ONLY(argv, "--debug")
     ARG_END(argv)
 
-    LOGD("exec app_process");
+    LOGD("exec app_process for %s", process_name);
 
     if (execvp((const char *) argv[0], argv)) {
+        PLOGE("execvp failed for app_process");
         exit(EXIT_FATAL_APP_PROCESS);
     }
 }
 
 static void start_server(const char *path, const char *main_class, const char *process_name) {
+    signal(SIGHUP, SIG_IGN);
+    signal(SIGPIPE, SIG_IGN);
+
     pid_t pid = fork();
     switch (pid) {
         case -1: {
@@ -121,21 +128,35 @@ static void start_server(const char *path, const char *main_class, const char *p
             exit(EXIT_FATAL_FORK);
         }
         case 0: {
-            LOGD("child");
+            signal(SIGHUP, SIG_IGN);
+            signal(SIGPIPE, SIG_IGN);
             setsid();
             chdir("/");
-            int fd = open("/dev/null", O_RDWR);
-            if (fd != -1) {
-                dup2(fd, STDIN_FILENO);
-                dup2(fd, STDOUT_FILENO);
-                dup2(fd, STDERR_FILENO);
-                if (fd > 2) close(fd);
+            LOGD("child process started, pid=%d", getpid());
+
+            int fd_null = open("/dev/null", O_RDWR);
+            if (fd_null != -1) {
+                dup2(fd_null, STDIN_FILENO);
+                dup2(fd_null, STDOUT_FILENO);
+                if (fd_null > 1) close(fd_null);
             }
+
+            int fd_err = open("/data/local/tmp/shevery_server.log", O_WRONLY | O_CREAT | O_TRUNC, 0666);
+            if (fd_err != -1) {
+                dup2(fd_err, STDERR_FILENO);
+                if (fd_err > 2) close(fd_err);
+            } else if (fd_null != -1) {
+                dup2(fd_null, STDERR_FILENO);
+            }
+
             run_server(path, main_class, process_name);
         }
         default: {
             printf("info: shizuku_server pid is %d\n", pid);
             printf("info: shizuku_starter exit with 0\n");
+            fflush(stdout);
+            LOGD("forked server pid %d, waiting for daemonization", pid);
+            usleep(150000);
             exit(EXIT_SUCCESS);
         }
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Lab-only receiver: registered DYNAMICALLY by TestHostActivity (see its -->
+        <!-- comment) - a manifest entry hits background-execution limits on API 28+. -->
+        <application>
+        <activity
+            android:name=".TestHostActivity"
+            android:exported="true" />
+    </application>
+</manifest>

@@ -21,14 +21,6 @@ object SheveryAutoUpdateWorker {
         }
     }
 
-    fun cancel(context: Context) {
-        try {
-            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-        } catch (e: Exception) {
-            android.util.Log.e("SheveryAutoUpdate", "Failed to cancel update check", e)
-        }
-    }
-
     private fun schedule(context: Context) {
         if (!moe.shizuku.manager.module.ModuleSettings.isAppUpdateAutoCheckEnabled()) {
             WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)

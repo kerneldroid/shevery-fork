@@ -7,7 +7,6 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -19,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -28,7 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.launch
-import moe.shizuku.manager.BuildConfig
+import moe.shizuku.manager.module.ModuleSettings
 import moe.shizuku.manager.module.update.SheveryAppUpdateDialog
 import moe.shizuku.manager.module.update.SheveryAppUpdateResult
 import moe.shizuku.manager.module.update.SheveryUpdateChecker
@@ -82,7 +80,22 @@ class AboutActivity : AppActivity() {
                                 onClick = {
                                     scope.launch {
                                         isCheckingUpdate = true
-                                        appUpdateResult = SheveryUpdateChecker.getInstance().checkAppUpdate(this@AboutActivity)
+                                        val result = SheveryUpdateChecker.getInstance().checkAppUpdate(this@AboutActivity)
+                                        // Keep the home card in sync: refresh pending update on a live check,
+                                        // and clear it once no newer release exists (so it never advertises an old version.
+
+                                        if (result.error == null) {
+                                            if (result.hasUpdate && result.downloadUrl != null) {
+                                                ModuleSettings.setPendingUpdate(
+                                                    version = result.latestVersion ?: "",
+                                                    url = result.downloadUrl ?: "",
+                                                    detectedAt = System.currentTimeMillis()
+                                                )
+                                            } else {
+                                                ModuleSettings.clearPendingUpdate()
+                                            }
+                                        }
+                                        appUpdateResult = result
                                         isCheckingUpdate = false
                                     }
                                 }
@@ -101,7 +114,7 @@ class AboutActivity : AppActivity() {
                     item {
                         Spacer(modifier = Modifier.height(24.dp))
                         Text(
-                            text = "© 2026 RikkaApps & Community. Open Source Project.",
+                            text = "Open Source Project",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             textAlign = TextAlign.Center,
@@ -124,7 +137,9 @@ class AboutActivity : AppActivity() {
                                 Text(stringResource(R.string.shevery_update_checking))
                             }
                         },
-                        confirmButton = {}
+                        confirmButton = {},
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = MaterialTheme.shapes.extraLarge
                     )
                 }
 
@@ -152,7 +167,7 @@ class AboutActivity : AppActivity() {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .padding(vertical = 8.dp)
                 .clip(RoundedCornerShape(28.dp))
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(vertical = 32.dp, horizontal = 16.dp),
@@ -201,13 +216,11 @@ class AboutActivity : AppActivity() {
     @Composable
     private fun AboutDescriptionCard() {
         Card(
-            shape = RoundedCornerShape(24.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surfaceContainerLow
             ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
                 Text(
@@ -237,33 +250,15 @@ class AboutActivity : AppActivity() {
                 summary = "github.com/HmnDev-Tech/shevery",
                 onClick = {
                     CustomTabsHelper.launchUrlOrCopy(context, "https://github.com/HmnDev-Tech/shevery")
-                }
-            )
-            GroupDivider()
-            SettingsRow(
-                icon = R.drawable.ic_baseline_link_24,
-                title = "Website",
-                summary = "shizuku.rikka.app",
-                onClick = {
-                    CustomTabsHelper.launchUrlOrCopy(context, "https://shizuku.rikka.app")
-                }
+               }
             )
             GroupDivider()
             SettingsRow(
                 icon = R.drawable.ic_outline_info_24,
-                title = "Support & Channel",
-                summary = "Join the community support",
+                title = "Channel",
+                summary = "Join the community channel",
                 onClick = {
-                    CustomTabsHelper.launchUrlOrCopy(context, "https://t.me/rikkacommunity")
-                }
-            )
-            GroupDivider()
-            SettingsRow(
-                icon = R.drawable.ic_baseline_link_24,
-                title = "Buy me a coffee",
-                summary = "Ko-fi.com/hmndevtech",
-                onClick = {
-                    CustomTabsHelper.launchUrlOrCopy(context, "https://Ko-fi.com/hmndevtech")
+                    CustomTabsHelper.launchUrlOrCopy(context, "https://t.me/hmndevtech")
                 }
             )
         }

@@ -13,7 +13,6 @@ import android.util.Log
 import com.topjohnwu.superuser.Shell
 import moe.shizuku.manager.ShizukuSettings
 import moe.shizuku.manager.application
-import java.io.File
 import java.net.InetSocketAddress
 import java.net.Socket
 
@@ -58,6 +57,13 @@ object EnvironmentUtils {
             .distinct()
 
         return candidates.firstOrNull { isAdbPortLive(it) } ?: -1
+    }
+
+    fun getActiveAdbPort(): Int {
+        return getLiveAdbTcpPort().takeIf { it > 0 }
+            ?: getAdbTcpPort().takeIf { it > 0 }
+            ?: ShizukuSettings.getLastAdbPort().takeIf { it > 0 }
+            ?: -1
     }
 
     fun isAdbPortLive(port: Int): Boolean {

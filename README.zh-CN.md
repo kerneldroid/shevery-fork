@@ -1,6 +1,6 @@
 # Shevery
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+[English](README.md) | [Русский](README.ru.md) | [Қазақша](README.kk.md) | [Qazaqşa (Latın)](README.kk-Latn.md) | [Português](README.pt.md) | [Español](README.es.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 ## 分支状态
 
@@ -45,6 +45,11 @@ Shizuku 采用了完全不同的方式。请参阅下方的详细说明。
 ## 用户指南与下载
 
 <https://shizuku.rikka.app/>
+
+> [!CAUTION]
+> **官方免费应用声明**
+>
+> Shevery 是一款**完全免费的应用 (App)**。请勿在任何第三方网盘或付费文件管理器中购买或付费下载本应用，切勿上当受骗！
 
 ## 截图
 

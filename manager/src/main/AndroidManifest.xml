@@ -31,6 +31,7 @@
         tools:ignore="ProtectedPermissions" />
     <!-- Network state checks (matches DJG reference) -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- Prevent the OS from killing Shevery's foreground services on boot (matches DJG reference) -->
     <uses-permission
         android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"

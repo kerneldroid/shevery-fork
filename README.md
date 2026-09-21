@@ -9,7 +9,7 @@
 </div>
 
 
-[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+[English](README.md) | [Русский](README.ru.md) | [Қазақша](README.kk.md) | [Qazaqşa (Latın)](README.kk-Latn.md) | [Português](README.pt.md) | [Español](README.es.md) | [العربية](README.ar.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
 
 ## Fork status
 
@@ -157,10 +157,8 @@ Follow this steps:
 - Add topic "shevery-modules"
 - Add sources and Release with module.
 
-## Attention!
-
-**New builds** here: [actions](http://github.com/kerneldroid/shevery-fork/actions) / [releases](https://github.com/kerneldroid/shevery-fork/releases)
-
-**!!!** *Warning* **!!!**
-I see many shevery clones with renaming like "Shizako+". It's not Shizuku+ (not from thejaustin), it's just renaming of old shevery version. Don't download this for safety.
+> [!CAUTION]
+> **Free App Notice**
+> 
+>  Shevery is a **completely free app**. Do not pay any third-party file managers or cloud services to download this application.
 

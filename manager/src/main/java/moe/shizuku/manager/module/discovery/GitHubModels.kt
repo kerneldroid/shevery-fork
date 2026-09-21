@@ -12,7 +12,6 @@ data class GitHubRepo(
     @SerialName("stargazers_count") val stargazersCount: Int,
     @SerialName("forks_count") val forksCount: Int,
     val language: String?,
-    val topics: List<String> = emptyList(),
     val archived: Boolean = false,
     val fork: Boolean = false,
     @SerialName("default_branch") val defaultBranch: String = "main",

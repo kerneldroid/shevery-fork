@@ -10,8 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -137,7 +136,7 @@ fun UpdateSettingsScreen(
 }
 
 @Composable
-private fun UpdateFrequencyDropdown(
+internal fun UpdateFrequencyDropdown(
     selected: ModuleSettings.UpdateFrequency,
     onSelect: (ModuleSettings.UpdateFrequency) -> Unit
 ) {
@@ -305,7 +304,9 @@ private fun PatInputDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.extraLarge
     )
 }
 
