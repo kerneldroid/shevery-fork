@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Apps
 import androidx.compose.material.icons.rounded.Home
@@ -47,7 +48,6 @@ import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Terminal
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -82,6 +82,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -984,7 +985,7 @@ private fun HomeScreen(
             }
 
             item {
-                QuickActionsRow(
+                QuickActionsPills(
                     running = running,
                     isPrimaryUser = isPrimaryUser,
                     onTerminal = onTerminal,
@@ -1250,7 +1251,7 @@ private fun ManageAppsCard(
 }
 
 @Composable
-private fun QuickActionsRow(
+private fun QuickActionsPills(
     running: Boolean,
     isPrimaryUser: Boolean,
     onTerminal: () -> Unit,
@@ -1260,43 +1261,25 @@ private fun QuickActionsRow(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            AssistChip(
-                onClick = onTerminal,
+            QuickActionPill(
+                icon = Icons.Rounded.Terminal,
+                label = stringResource(R.string.home_quick_terminal),
                 enabled = running,
-                label = { Text(stringResource(R.string.home_quick_terminal)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Rounded.Terminal,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                onClick = onTerminal
             )
             if (isPrimaryUser) {
-                AssistChip(
-                    onClick = onStartWirelessAdb,
-                    label = { Text(stringResource(R.string.home_quick_wireless)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.Wifi,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                QuickActionPill(
+                    icon = Icons.Rounded.Wifi,
+                    label = stringResource(R.string.home_quick_wireless),
+                    onClick = onStartWirelessAdb
                 )
-                AssistChip(
-                    onClick = onPairWirelessAdb,
-                    label = { Text(stringResource(R.string.adb_pairing)) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Rounded.NearMe,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
+                QuickActionPill(
+                    icon = Icons.Rounded.NearMe,
+                    label = stringResource(R.string.adb_pairing),
+                    onClick = onPairWirelessAdb
                 )
             }
         }
@@ -1304,6 +1287,51 @@ private fun QuickActionsRow(
             TextButton(onClick = onOpenWirelessGuide) {
                 Text(stringResource(R.string.home_wireless_adb_view_guide_button))
             }
+        }
+    }
+}
+
+@Composable
+private fun QuickActionPill(
+    icon: ImageVector,
+    label: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = RoundedCornerShape(percent = 50),
+        color = if (enabled) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh
+        }
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (enabled) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (enabled) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
         }
     }
 }
