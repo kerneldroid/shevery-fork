@@ -360,6 +360,8 @@
     <string name="home_quick_terminal"><![CDATA[Терминал]]></string>
     <string name="home_quick_wireless"><![CDATA[Беспроводной ADB]]></string>
     <string name="home_quick_tcp"><![CDATA[ПТС 5555]]></string>
+    <string name="home_section_quick_actions"><![CDATA[Быстрые действия]]></string>
+    <string name="home_section_setup"><![CDATA[Настройка]]></string>
     <string name="home_manage_apps_button"><![CDATA[Управление приложениями]]></string>
     <string name="app_management_loading"><![CDATA[Загрузка приложений…]]></string>
     <string name="service_already_stopped"><![CDATA[Служба Shevery уже остановлена.]]></string>
@@ -368,6 +370,9 @@
     <string name="service_stop_failed"><![CDATA[Не удалось остановить Shevery: %1$s]]></string>
     <string name="settings_application"><![CDATA[Приложение]]></string>
     <string name="settings_appearance"><![CDATA[Внешний вид]]></string>
+    <string name="settings_tab_service"><![CDATA[Служба]]></string>
+    <string name="settings_tab_interface"><![CDATA[Интерфейс]]></string>
+    <string name="settings_tab_advanced"><![CDATA[Прочее]]></string>
     <string name="settings_restart_dialog_title"><![CDATA[Требуется перезапуск]]></string>
     <string name="settings_restart_dialog_message"><![CDATA[Для применения изменения режима TCP потребуется перезапуск Shevery.]]></string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[Для первого перезапуска требуется Wi-Fi, так как Shevery должна подключиться к текущему порту беспроводной отладки, прежде чем переключить ADB на порт 5555.]]></string>

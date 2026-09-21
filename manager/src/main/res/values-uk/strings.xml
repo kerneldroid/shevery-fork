@@ -444,6 +444,8 @@
     <string name="home_quick_terminal"><![CDATA[Термінал]]></string>
     <string name="home_quick_wireless"><![CDATA[Бездротовий ADB]]></string>
     <string name="home_quick_tcp">TCP 5555</string>
+    <string name="home_section_quick_actions"><![CDATA[Швидкі дії]]></string>
+    <string name="home_section_setup"><![CDATA[Налаштування]]></string>
     <string name="home_manage_apps_button"><![CDATA[Керування програмами]]></string>
     <string name="app_management_loading"><![CDATA[Завантаження програм…]]></string>
     <string name="settings_start_on_boot_adb"><![CDATA[Запуск під час завантаження за допомогою бездротового налагодження]]></string>
@@ -464,6 +466,9 @@
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[Для першого перезапуску необхідне підключення до Wi-Fi, оскільки Shevery має підключитися до поточного порту бездротового налагодження, перш ніж перемкнути ADB на порт 5555.]]></string>
     <string name="settings_application"><![CDATA[Застосування]]></string>
     <string name="settings_appearance"><![CDATA[Зовнішній вигляд]]></string>
+    <string name="settings_tab_service"><![CDATA[Служба]]></string>
+    <string name="settings_tab_interface"><![CDATA[Інтерфейс]]></string>
+    <string name="settings_tab_advanced"><![CDATA[Додатково]]></string>
     <string name="notification_startup_channel_name"><![CDATA[Запуск Shevery]]></string>
     <string name="notification_startup_title"><![CDATA[Запуск Shevery]]></string>
     <string name="notification_startup_enabling_wifi"><![CDATA[Увімкнення налагодження через Wi-Fi…]]></string>

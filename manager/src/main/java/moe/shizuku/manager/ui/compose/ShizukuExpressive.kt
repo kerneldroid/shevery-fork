@@ -329,6 +329,7 @@ fun ShizukuScaffold(
     navigationIcon: Int = R.drawable.ic_arrow_back_24,
     @StringRes navigationContentDescription: Int = R.string.accessibility_navigate_up,
     actions: @Composable RowScope.() -> Unit = {},
+    tabs: @Composable (() -> Unit)? = null,
     bottomBar: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit
 ) {
@@ -347,30 +348,33 @@ fun ShizukuScaffold(
         contentWindowInsets = WindowInsets(0.dp),
         bottomBar = bottomBar,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = title,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                },
-                navigationIcon = {
-                    if (onNavigateUp != null) {
-                        IconButton(onClick = onNavigateUp) {
-                            ShizukuIcon(
-                                navigationIcon,
-                                contentDescription = stringResource(navigationContentDescription)
-                            )
+            Column {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = title,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
+                    navigationIcon = {
+                        if (onNavigateUp != null) {
+                            IconButton(onClick = onNavigateUp) {
+                                ShizukuIcon(
+                                    navigationIcon,
+                                    contentDescription = stringResource(navigationContentDescription)
+                                )
+                            }
                         }
-                    }
-                },
-                actions = actions,
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    },
+                    actions = actions,
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
+                    )
                 )
-            )
+                tabs?.invoke()
+            }
         },
         content = content
     )
@@ -384,6 +388,7 @@ fun ShizukuLazyScaffold(
     navigationIcon: Int = R.drawable.ic_arrow_back_24,
     @StringRes navigationContentDescription: Int = R.string.accessibility_navigate_up,
     actions: @Composable RowScope.() -> Unit = {},
+    tabs: @Composable (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 16.dp),
     bottomInset: Dp = 0.dp,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(10.dp),
@@ -398,7 +403,8 @@ fun ShizukuLazyScaffold(
         onNavigateUp = onNavigateUp,
         navigationIcon = navigationIcon,
         navigationContentDescription = navigationContentDescription,
-        actions = actions
+        actions = actions,
+        tabs = tabs
     ) { innerPadding ->
         val navigationBarPadding = WindowInsets.navigationBars.asPaddingValues()
         val list = @Composable {

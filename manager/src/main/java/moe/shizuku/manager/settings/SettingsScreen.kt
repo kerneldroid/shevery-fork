@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
@@ -33,7 +34,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -49,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import moe.shizuku.manager.R
@@ -74,6 +79,7 @@ import moe.shizuku.manager.ui.compose.MonospaceLog
 import moe.shizuku.manager.ui.compose.SectionHeader
 import moe.shizuku.manager.ui.compose.SettingsGroup
 import moe.shizuku.manager.ui.compose.SettingsRow
+import moe.shizuku.manager.ui.compose.ShizukuIcon
 import moe.shizuku.manager.ui.compose.ShizukuLazyScaffold
 import moe.shizuku.manager.ui.compose.SwitchSettingsRow
 import moe.shizuku.manager.ui.compose.htmlToPlainText
@@ -96,6 +102,11 @@ import android.widget.Toast
 import moe.shizuku.manager.utils.BackupRestoreUtil
 import moe.shizuku.manager.utils.AiExplainUtil
 
+
+private const val TAB_SERVICE = 0
+private const val TAB_MODULES = 1
+private const val TAB_APPEARANCE = 2
+private const val TAB_ADVANCED = 3
 
 @Composable
 fun SettingsScreen(
@@ -212,6 +223,20 @@ fun SettingsScreen(
     var showMissingPermissionDialog by remember { mutableStateOf(false) }
     var recreateTick by remember { mutableIntStateOf(0) }
     var showUpdateSettings by remember { mutableStateOf(false) }
+    var settingsTab by rememberSaveable { mutableIntStateOf(TAB_SERVICE) }
+    var settingsTabInitialized by remember { mutableStateOf(false) }
+
+    // Switching between the settings tabs should show the new tab from the top;
+    // the shared list state is only reset once the user actually changes tabs,
+    // so the scroll position restored when returning from another bottom-nav
+    // destination is preserved.
+    LaunchedEffect(settingsTab) {
+        if (settingsTabInitialized) {
+            listState.scrollToItem(0)
+        } else {
+            settingsTabInitialized = true
+        }
+    }
 
     // AI Provider manager replaces the whole Settings screen while open:
     // composing it after the Scaffold stacked a second TopAppBar over this
@@ -373,8 +398,15 @@ fun SettingsScreen(
             title = stringResource(R.string.settings_title),
             onNavigateUp = null,
             bottomInset = 112.dp,
-            listState = listState
+            listState = listState,
+            tabs = {
+                SettingsTabs(
+                    selected = settingsTab,
+                    onSelect = { settingsTab = it }
+                )
+            }
         ) {
+        if (settingsTab == TAB_SERVICE) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_application)) {
                 SectionHeader(stringResource(R.string.settings_startup))
@@ -547,7 +579,9 @@ fun SettingsScreen(
                 )
             }
         }
+        }
 
+        if (settingsTab == TAB_APPEARANCE) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_language)) {
                 SettingsRow(
@@ -598,7 +632,9 @@ fun SettingsScreen(
                 }
             }
         }
+        }
 
+        if (settingsTab == TAB_MODULES) {
         item {
             SettingsGroup(title = stringResource(R.string.modules_settings_title)) {
                 SettingsRow(
@@ -651,7 +687,9 @@ fun SettingsScreen(
                 )
             }
         }
+        }
 
+        if (settingsTab == TAB_ADVANCED) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_update_group_title)) {
                 SettingsRow(
@@ -751,6 +789,7 @@ fun SettingsScreen(
                     }
                 )
             }
+        }
         }
     }
     }
@@ -963,6 +1002,47 @@ fun SettingsScreen(
             containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             shape = MaterialTheme.shapes.extraLarge
         )
+    }
+}
+
+private data class SettingsTabSpec(
+    val index: Int,
+    @param:androidx.annotation.StringRes val title: Int,
+    @param:androidx.annotation.DrawableRes val icon: Int
+)
+
+@Composable
+private fun SettingsTabs(
+    selected: Int,
+    onSelect: (Int) -> Unit
+) {
+    val tabs = listOf(
+        SettingsTabSpec(TAB_SERVICE, R.string.settings_tab_service, R.drawable.ic_server_restart),
+        SettingsTabSpec(TAB_MODULES, R.string.modules_settings_title, R.drawable.ic_system_icon),
+        SettingsTabSpec(TAB_APPEARANCE, R.string.settings_tab_interface, R.drawable.ic_outline_dark_mode_24),
+        SettingsTabSpec(TAB_ADVANCED, R.string.settings_tab_advanced, R.drawable.ic_settings_outline_24dp)
+    )
+    PrimaryTabRow(selectedTabIndex = selected) {
+        tabs.forEach { tab ->
+            Tab(
+                selected = selected == tab.index,
+                onClick = { if (selected != tab.index) onSelect(tab.index) },
+                icon = {
+                    ShizukuIcon(
+                        icon = tab.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                },
+                text = {
+                    Text(
+                        text = stringResource(tab.title),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            )
+        }
     }
 }
 

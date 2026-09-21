@@ -93,6 +93,8 @@
     <string name="home_quick_terminal">Terminal</string>
     <string name="home_quick_wireless">Wireless ADB</string>
     <string name="home_quick_tcp">TCP 5555</string>
+    <string name="home_section_quick_actions">Quick actions</string>
+    <string name="home_section_setup">Setup</string>
     <string name="home_manage_apps_button">Manage apps</string>
 
     <!-- Home - Diagnostics -->
@@ -329,6 +331,9 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="settings_service_group">Service Maintenance</string>
     <string name="settings_application">Application</string>
     <string name="settings_appearance">Appearance</string>
+    <string name="settings_tab_service">Service</string>
+    <string name="settings_tab_interface">Interface</string>
+    <string name="settings_tab_advanced">Advanced</string>
 
     <!-- Lab Features - Service Behavior -->
     <string name="lab_service_behavior_title">Service Behavior</string>
