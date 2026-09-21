@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class
+)
 
 package moe.shizuku.manager.settings
 
@@ -24,7 +27,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -41,8 +43,10 @@ import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.SegmentedListItem
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -62,7 +66,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import moe.shizuku.manager.R
@@ -119,6 +122,7 @@ private const val SECTION_APPEARANCE = 3
 private const val SECTION_UPDATES = 4
 private const val SECTION_AI = 5
 private const val SECTION_ADVANCED = 6
+private const val SECTION_COUNT = 6
 
 @Composable
 fun SettingsScreen(
@@ -409,10 +413,11 @@ fun SettingsScreen(
             bottomInset = 112.dp,
             listState = listState,
             contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)
         ) {
             item {
                 SettingsHubRow(
+                    index = 0,
                     icon = R.drawable.ic_server_restart,
                     title = stringResource(R.string.settings_tab_service),
                     summary = stringResource(R.string.settings_hub_service_summary),
@@ -423,6 +428,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsHubRow(
+                    index = 1,
                     icon = R.drawable.ic_system_icon,
                     title = stringResource(R.string.modules_settings_title),
                     summary = stringResource(R.string.settings_hub_modules_summary),
@@ -433,6 +439,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsHubRow(
+                    index = 2,
                     icon = R.drawable.ic_outline_dark_mode_24,
                     title = stringResource(R.string.settings_tab_interface),
                     summary = stringResource(R.string.settings_hub_interface_summary),
@@ -443,6 +450,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsHubRow(
+                    index = 3,
                     icon = R.drawable.ic_outline_arrow_upward_24,
                     title = stringResource(R.string.settings_hub_updates_title),
                     summary = stringResource(R.string.settings_hub_updates_summary),
@@ -453,6 +461,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsHubRow(
+                    index = 4,
                     icon = R.drawable.ic_code_24dp,
                     title = stringResource(R.string.settings_hub_ai_title),
                     summary = stringResource(R.string.settings_hub_ai_summary),
@@ -463,6 +472,7 @@ fun SettingsScreen(
             }
             item {
                 SettingsHubRow(
+                    index = 5,
                     icon = R.drawable.ic_settings_outline_24dp,
                     title = stringResource(R.string.settings_tab_advanced),
                     summary = stringResource(R.string.settings_hub_advanced_summary),
@@ -1095,6 +1105,7 @@ private fun settingsSectionTitle(section: Int): Int = when (section) {
 
 @Composable
 private fun SettingsHubRow(
+    index: Int,
     @androidx.annotation.DrawableRes icon: Int,
     title: String,
     summary: String,
@@ -1102,20 +1113,13 @@ private fun SettingsHubRow(
     contentColor: Color,
     onClick: () -> Unit
 ) {
-    Surface(
+    SegmentedListItem(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaterialTheme.shapes.extraLarge,
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        tonalElevation = 1.dp
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        shapes = ListItemDefaults.segmentedShapes(index = index, count = SECTION_COUNT),
+        colors = ListItemDefaults.segmentedColors(),
+        leadingContent = {
             Surface(
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(44.dp),
                 shape = CircleShape,
                 color = containerColor
             ) {
@@ -1124,33 +1128,21 @@ private fun SettingsHubRow(
                         icon = icon,
                         contentDescription = null,
                         tint = contentColor,
-                        modifier = Modifier.size(26.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             }
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(2.dp)
-            ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        },
+        supportingContent = { Text(text = summary) },
+        trailingContent = {
             Icon(
                 imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
-    }
+        },
+        content = { Text(text = title) }
+    )
 }
 
 private data class LocaleOption(

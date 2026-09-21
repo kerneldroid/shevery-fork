@@ -84,10 +84,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 
 import androidx.compose.material3.FloatingToolbarDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -531,15 +532,8 @@ fun SettingsGroup(
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.SemiBold
         )
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            shape = MaterialTheme.shapes.extraLarge,
-            color = MaterialTheme.colorScheme.surfaceContainer,
-            tonalElevation = 1.dp
-        ) {
-            Column {
-                content()
-            }
+        Column(verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap)) {
+            content()
         }
     }
 }
@@ -556,6 +550,22 @@ fun SectionHeader(title: String) {
 }
 
 @Composable
+private fun settingsRowLeading(@DrawableRes icon: Int?): (@Composable () -> Unit)? = icon?.let { res ->
+    {
+        ShizukuIcon(
+            icon = res,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(24.dp)
+        )
+    }
+}
+
+@Composable
+private fun settingsRowSupporting(summary: String?): (@Composable () -> Unit)? =
+    summary?.takeIf { it.isNotBlank() }?.let { text -> { Text(text = text) } }
+
+@Composable
 fun SettingsRow(
     @DrawableRes icon: Int?,
     title: String,
@@ -566,48 +576,33 @@ fun SettingsRow(
     onClick: (() -> Unit)? = null,
     trailing: @Composable (() -> Unit)? = null
 ) {
-    val clickableModifier = if (onClick != null) {
-        Modifier.clickable(enabled = enabled, onClick = onClick)
+    val rowModifier = modifier
+        .fillMaxWidth()
+        .semantics(mergeDescendants = true) { stateDescription?.let { this.stateDescription = it } }
+    val colors = ListItemDefaults.colors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer
+    )
+    if (onClick != null) {
+        ListItem(
+            onClick = { if (enabled) onClick() },
+            modifier = rowModifier,
+            enabled = enabled,
+            leadingContent = settingsRowLeading(icon),
+            trailingContent = trailing,
+            supportingContent = settingsRowSupporting(summary),
+            colors = colors,
+            content = { Text(text = title) }
+        )
     } else {
-        Modifier
-    }
-    Row(
-            modifier = modifier
-                .fillMaxWidth()
-                .then(clickableModifier)
-                .semantics(mergeDescendants = true) { stateDescription?.let { this.stateDescription = it } } // AFTER clickable, so the merged node wraps the click action too
-                .alpha(if (enabled) 1f else  0.56f)
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        if (icon != null) {
-            ShizukuIcon(
-                icon = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(24.dp)
-            )
-        }
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp)
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium
-            )
-            if (!summary.isNullOrBlank()) {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-        trailing?.invoke()
+        ListItem(
+            modifier = rowModifier,
+            enabled = enabled,
+            leadingContent = settingsRowLeading(icon),
+            trailingContent = trailing,
+            supportingContent = settingsRowSupporting(summary),
+            colors = colors,
+            content = { Text(text = title) }
+        )
     }
 }
 
@@ -621,32 +616,36 @@ fun SwitchSettingsRow(
     summary: String? = null,
     enabled: Boolean = true
 ) {
-    SettingsRow(
-        icon = icon,
-        title = title,
-        modifier = modifier,
-        summary = summary,
-        stateDescription = if (checked) "On" else "Off",
-        enabled = enabled,
+    val rowModifier = modifier
+        .fillMaxWidth()
+        .semantics(mergeDescendants = true) {
+            stateDescription = if (checked) "On" else "Off"
+        }
+    ListItem(
         onClick = { if (enabled) onCheckedChange(!checked) },
-        trailing = {
+        modifier = rowModifier,
+        enabled = enabled,
+        leadingContent = settingsRowLeading(icon),
+        supportingContent = settingsRowSupporting(summary),
+        trailingContent = {
             Box(modifier = Modifier.clearAndSetSemantics {}) {
                 ExpressiveSwitch(
                     checked = checked,
                     enabled = enabled,
-                    onCheckedChange = null // Row's clickable handles the toggle; hide the switch's own node so it doesn't fight the merged row
+                    onCheckedChange = null // the row's click handles the toggle; hide the switch's own node
                 )
             }
-        }
+        },
+        colors = ListItemDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        content = { Text(text = title) }
     )
 }
 
 @Composable
 fun GroupDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 56.dp),
-        color = MaterialTheme.colorScheme.outlineVariant
-    )
+    // Settings rows are individual containers separated by the group spacing now.
 }
 
 @Composable
