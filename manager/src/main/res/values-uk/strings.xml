@@ -469,6 +469,14 @@
     <string name="settings_tab_service"><![CDATA[Служба]]></string>
     <string name="settings_tab_interface"><![CDATA[Інтерфейс]]></string>
     <string name="settings_tab_advanced"><![CDATA[Додатково]]></string>
+    <string name="settings_hub_service_summary"><![CDATA[Автозапуск, watchdog, ADB і Dhizuku]]></string>
+    <string name="settings_hub_modules_summary"><![CDATA[Режим доступу, дозволи та фонові дії]]></string>
+    <string name="settings_hub_interface_summary"><![CDATA[Тема, динамічні кольори та мова]]></string>
+    <string name="settings_hub_updates_title"><![CDATA[Оновлення]]></string>
+    <string name="settings_hub_updates_summary"><![CDATA[Каталог модулів і оновлення застосунку Shevery]]></string>
+    <string name="settings_hub_ai_title"><![CDATA[ШІ]]></string>
+    <string name="settings_hub_ai_summary"><![CDATA[Провайдер, модель і рекомендації для команд]]></string>
+    <string name="settings_hub_advanced_summary"><![CDATA[Доступність, лабораторія, резервні копії та про застосунок]]></string>
     <string name="notification_startup_channel_name"><![CDATA[Запуск Shevery]]></string>
     <string name="notification_startup_title"><![CDATA[Запуск Shevery]]></string>
     <string name="notification_startup_enabling_wifi"><![CDATA[Увімкнення налагодження через Wi-Fi…]]></string>

@@ -334,6 +334,14 @@ Wi-Fi is required for the first restart because Shevery must connect to the curr
     <string name="settings_tab_service">Service</string>
     <string name="settings_tab_interface">Interface</string>
     <string name="settings_tab_advanced">Advanced</string>
+    <string name="settings_hub_service_summary">Start on boot, watchdog, ADB and Dhizuku</string>
+    <string name="settings_hub_modules_summary">Access mode, permissions and background actions</string>
+    <string name="settings_hub_interface_summary">Theme, dynamic color and language</string>
+    <string name="settings_hub_updates_title">Updates</string>
+    <string name="settings_hub_updates_summary">Module catalog and Shevery app updates</string>
+    <string name="settings_hub_ai_title">AI</string>
+    <string name="settings_hub_ai_summary">Provider, model and command recommendations</string>
+    <string name="settings_hub_advanced_summary">Accessibility, lab features, backup and about</string>
 
     <!-- Lab Features - Service Behavior -->
     <string name="lab_service_behavior_title">Service Behavior</string>

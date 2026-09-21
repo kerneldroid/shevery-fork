@@ -373,6 +373,14 @@
     <string name="settings_tab_service"><![CDATA[Служба]]></string>
     <string name="settings_tab_interface"><![CDATA[Интерфейс]]></string>
     <string name="settings_tab_advanced"><![CDATA[Прочее]]></string>
+    <string name="settings_hub_service_summary"><![CDATA[Автозапуск, watchdog, ADB и Dhizuku]]></string>
+    <string name="settings_hub_modules_summary"><![CDATA[Режим доступа, разрешения и фоновые действия]]></string>
+    <string name="settings_hub_interface_summary"><![CDATA[Тема, динамические цвета и язык]]></string>
+    <string name="settings_hub_updates_title"><![CDATA[Обновления]]></string>
+    <string name="settings_hub_updates_summary"><![CDATA[Каталог модулей и обновления приложения Shevery]]></string>
+    <string name="settings_hub_ai_title"><![CDATA[ИИ]]></string>
+    <string name="settings_hub_ai_summary"><![CDATA[Провайдер, модель и рекомендации для команд]]></string>
+    <string name="settings_hub_advanced_summary"><![CDATA[Доступность, лаборатория, резервные копии и о программе]]></string>
     <string name="settings_restart_dialog_title"><![CDATA[Требуется перезапуск]]></string>
     <string name="settings_restart_dialog_message"><![CDATA[Для применения изменения режима TCP потребуется перезапуск Shevery.]]></string>
     <string name="settings_restart_dialog_message_wifi_required"><![CDATA[Для первого перезапуска требуется Wi-Fi, так как Shevery должна подключиться к текущему порту беспроводной отладки, прежде чем переключить ADB на порт 5555.]]></string>

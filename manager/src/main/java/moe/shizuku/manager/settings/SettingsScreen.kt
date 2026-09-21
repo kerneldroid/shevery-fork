@@ -20,7 +20,11 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,13 +34,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForwardIos
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Tab
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -48,12 +55,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import moe.shizuku.manager.R
@@ -103,10 +112,13 @@ import moe.shizuku.manager.utils.BackupRestoreUtil
 import moe.shizuku.manager.utils.AiExplainUtil
 
 
-private const val TAB_SERVICE = 0
-private const val TAB_MODULES = 1
-private const val TAB_APPEARANCE = 2
-private const val TAB_ADVANCED = 3
+private const val SECTION_HUB = 0
+private const val SECTION_SERVICE = 1
+private const val SECTION_MODULES = 2
+private const val SECTION_APPEARANCE = 3
+private const val SECTION_UPDATES = 4
+private const val SECTION_AI = 5
+private const val SECTION_ADVANCED = 6
 
 @Composable
 fun SettingsScreen(
@@ -223,18 +235,14 @@ fun SettingsScreen(
     var showMissingPermissionDialog by remember { mutableStateOf(false) }
     var recreateTick by remember { mutableIntStateOf(0) }
     var showUpdateSettings by remember { mutableStateOf(false) }
-    var settingsTab by rememberSaveable { mutableIntStateOf(TAB_SERVICE) }
-    var settingsTabInitialized by remember { mutableStateOf(false) }
+    var settingsSection by rememberSaveable { mutableIntStateOf(SECTION_HUB) }
+    val sectionListState = rememberLazyListState()
 
-    // Switching between the settings tabs should show the new tab from the top;
-    // the shared list state is only reset once the user actually changes tabs,
-    // so the scroll position restored when returning from another bottom-nav
-    // destination is preserved.
-    LaunchedEffect(settingsTab) {
-        if (settingsTabInitialized) {
-            listState.scrollToItem(0)
-        } else {
-            settingsTabInitialized = true
+    // Every settings section opens at the top; the hub keeps the shared list
+    // state so its scroll position survives switching bottom-nav destinations.
+    LaunchedEffect(settingsSection) {
+        if (settingsSection != SECTION_HUB) {
+            sectionListState.scrollToItem(0)
         }
     }
 
@@ -394,19 +402,85 @@ fun SettingsScreen(
                 onNavigateUp = { showUpdateSettings = false }
             )
         } else {
+        if (settingsSection == SECTION_HUB) {
         ShizukuLazyScaffold(
             title = stringResource(R.string.settings_title),
             onNavigateUp = null,
             bottomInset = 112.dp,
             listState = listState,
-            tabs = {
-                SettingsTabs(
-                    selected = settingsTab,
-                    onSelect = { settingsTab = it }
+            contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_server_restart,
+                    title = stringResource(R.string.settings_tab_service),
+                    summary = stringResource(R.string.settings_hub_service_summary),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onClick = { settingsSection = SECTION_SERVICE }
                 )
             }
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_system_icon,
+                    title = stringResource(R.string.modules_settings_title),
+                    summary = stringResource(R.string.settings_hub_modules_summary),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = { settingsSection = SECTION_MODULES }
+                )
+            }
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_outline_dark_mode_24,
+                    title = stringResource(R.string.settings_tab_interface),
+                    summary = stringResource(R.string.settings_hub_interface_summary),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    onClick = { settingsSection = SECTION_APPEARANCE }
+                )
+            }
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_outline_arrow_upward_24,
+                    title = stringResource(R.string.settings_hub_updates_title),
+                    summary = stringResource(R.string.settings_hub_updates_summary),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    onClick = { settingsSection = SECTION_UPDATES }
+                )
+            }
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_code_24dp,
+                    title = stringResource(R.string.settings_hub_ai_title),
+                    summary = stringResource(R.string.settings_hub_ai_summary),
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+                    onClick = { settingsSection = SECTION_AI }
+                )
+            }
+            item {
+                SettingsHubRow(
+                    icon = R.drawable.ic_settings_outline_24dp,
+                    title = stringResource(R.string.settings_tab_advanced),
+                    summary = stringResource(R.string.settings_hub_advanced_summary),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = { settingsSection = SECTION_ADVANCED }
+                )
+            }
+        }
+        } else {
+        BackHandler { settingsSection = SECTION_HUB }
+        ShizukuLazyScaffold(
+            title = stringResource(settingsSectionTitle(settingsSection)),
+            onNavigateUp = { settingsSection = SECTION_HUB },
+            bottomInset = 16.dp,
+            listState = sectionListState
         ) {
-        if (settingsTab == TAB_SERVICE) {
+        if (settingsSection == SECTION_SERVICE) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_application)) {
                 SectionHeader(stringResource(R.string.settings_startup))
@@ -581,7 +655,7 @@ fun SettingsScreen(
         }
         }
 
-        if (settingsTab == TAB_APPEARANCE) {
+        if (settingsSection == SECTION_APPEARANCE) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_language)) {
                 SettingsRow(
@@ -634,7 +708,7 @@ fun SettingsScreen(
         }
         }
 
-        if (settingsTab == TAB_MODULES) {
+        if (settingsSection == SECTION_MODULES) {
         item {
             SettingsGroup(title = stringResource(R.string.modules_settings_title)) {
                 SettingsRow(
@@ -689,7 +763,7 @@ fun SettingsScreen(
         }
         }
 
-        if (settingsTab == TAB_ADVANCED) {
+        if (settingsSection == SECTION_UPDATES) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_update_group_title)) {
                 SettingsRow(
@@ -704,7 +778,9 @@ fun SettingsScreen(
         item {
             AppUpdateSettingsGroup()
         }
+        }
 
+        if (settingsSection == SECTION_AI) {
         item {
             SettingsGroup(title = stringResource(R.string.comput_settings)) {
                 SettingsRow(
@@ -733,7 +809,9 @@ fun SettingsScreen(
                 )
             }
         }
+        }
 
+        if (settingsSection == SECTION_ADVANCED) {
         item {
             SettingsGroup(title = stringResource(R.string.settings_sections_title)) {
                 SectionHeader(stringResource(R.string.accessibility_manager_lab_group))
@@ -791,6 +869,7 @@ fun SettingsScreen(
             }
         }
         }
+    }
     }
     }
 }
@@ -1005,42 +1084,70 @@ fun SettingsScreen(
     }
 }
 
-private data class SettingsTabSpec(
-    val index: Int,
-    @param:androidx.annotation.StringRes val title: Int,
-    @param:androidx.annotation.DrawableRes val icon: Int
-)
+private fun settingsSectionTitle(section: Int): Int = when (section) {
+    SECTION_SERVICE -> R.string.settings_tab_service
+    SECTION_MODULES -> R.string.modules_settings_title
+    SECTION_APPEARANCE -> R.string.settings_tab_interface
+    SECTION_UPDATES -> R.string.settings_hub_updates_title
+    SECTION_AI -> R.string.settings_hub_ai_title
+    else -> R.string.settings_tab_advanced
+}
 
 @Composable
-private fun SettingsTabs(
-    selected: Int,
-    onSelect: (Int) -> Unit
+private fun SettingsHubRow(
+    @androidx.annotation.DrawableRes icon: Int,
+    title: String,
+    summary: String,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit
 ) {
-    val tabs = listOf(
-        SettingsTabSpec(TAB_SERVICE, R.string.settings_tab_service, R.drawable.ic_server_restart),
-        SettingsTabSpec(TAB_MODULES, R.string.modules_settings_title, R.drawable.ic_system_icon),
-        SettingsTabSpec(TAB_APPEARANCE, R.string.settings_tab_interface, R.drawable.ic_outline_dark_mode_24),
-        SettingsTabSpec(TAB_ADVANCED, R.string.settings_tab_advanced, R.drawable.ic_settings_outline_24dp)
-    )
-    PrimaryTabRow(selectedTabIndex = selected) {
-        tabs.forEach { tab ->
-            Tab(
-                selected = selected == tab.index,
-                onClick = { if (selected != tab.index) onSelect(tab.index) },
-                icon = {
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 1.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                modifier = Modifier.size(56.dp),
+                shape = CircleShape,
+                color = containerColor
+            ) {
+                Box(contentAlignment = Alignment.Center) {
                     ShizukuIcon(
-                        icon = tab.icon,
+                        icon = icon,
                         contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                },
-                text = {
-                    Text(
-                        text = stringResource(tab.title),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                        tint = contentColor,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = summary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Rounded.ArrowForwardIos,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
